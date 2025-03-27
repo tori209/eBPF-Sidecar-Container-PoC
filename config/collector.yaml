@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collector-cm
+data: []
+---
+apiVersion: v1
+kind: DaemonSet
+metadata:
+  name: collector-ds
+  labels:
+    app: go-collector
+    purpose: ds-log-collector
+spec:
+  selector:
+  template:
+
