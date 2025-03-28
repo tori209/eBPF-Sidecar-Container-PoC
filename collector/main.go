@@ -47,9 +47,9 @@ func receive_message(conn net.Conn) {
 	defer conn.Close()
 
 	dec := gob.NewDecoder(conn)
-	var msg format.L4Message
+	var msgSlice []format.L4Message
 	for {
-		err := dec.Decode(&msg)
+		err := dec.Decode(&msgSlice)
 		if err == io.EOF {
 			log.Printf("Connection Closed")
 			break
@@ -58,6 +58,8 @@ func receive_message(conn net.Conn) {
 			log.Printf("Read Failed: %+v\n", err)
 			break
 		}
-		fmt.Printf(msg.String() + "\n");
+		for _, msg := range msgSlice {
+			fmt.Printf(msg.String() + "\n");
+		}
 	}
 }

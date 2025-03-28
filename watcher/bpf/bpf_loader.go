@@ -29,6 +29,7 @@ type BpfTrafficCapture struct {
 }
 
 func NewBpfTrafficCapture(endpoint, endpointType string, size uint32) (* BpfTrafficCapture) {
+	log.Printf("Create New TrafficCapture\n");
 	return &BpfTrafficCapture{
 		mu:	new(sync.Mutex),
 		logManager: logger.NewMetricManager(endpoint, endpointType, size),
@@ -64,22 +65,15 @@ func (btc *BpfTrafficCapture) StartCapture(ifaceName string) {
     defer coll.Close()
 	
 	// Attach TCXEgress =============================================
-	prog := coll.Programs["egress_capture"]
+	prog := coll.Programs["tc_egress_capture"]
     if prog == nil {
-        log.Fatalf("program not found")
+        log.Fatalf("program '%s' not exists", "tc_egress_capture") // 나중에 바꾸던가.
     }
 	lnk, err := link.AttachTCX(link.TCXOptions{
 		Interface:	iface.Index,
 		Program: 	prog,
 		Attach: 	ebpf.AttachTCXEgress,
 	})
-		/*
-		XDP(link.XDPOptions{
-			Program:	prog,
-			Interface:	iface.Index,
-			Flags:		link.XDPGenericMode,
-		})
-		*/
 	if err != nil {
 		log.Fatalf("Failed to attach TCXEgress to %s: %v",
 			ifaceName,
@@ -89,7 +83,7 @@ func (btc *BpfTrafficCapture) StartCapture(ifaceName string) {
 	defer lnk.Close()
 
 	// Get RingBuf Reference =======================================
-	rb, err := ringbuf.NewReader(coll.Maps["egress_events"])
+	rb, err := ringbuf.NewReader(coll.Maps["egress_metrics"])
     if err != nil {
         log.Fatalf("failed to open ring buffer: %v", err)
     }

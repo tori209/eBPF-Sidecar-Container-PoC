@@ -104,7 +104,7 @@ func (mm *MetricManager) sendToServer(logs []format.L4Message) {
 	// UUID를 추가해줘야...
 	enc := gob.NewEncoder(conn)
 	for l := range logs {
-		if err := enc.Encode(l); err != nil {
+		if err := enc.Encode(logs); err != nil {
 			log.Printf("Watcher/Logger: Failed to Send Log %+v: %+v", l, err)
 		}
 	}

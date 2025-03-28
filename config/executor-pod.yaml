@@ -4,10 +4,10 @@ metadata:
   name: executor-env
 data:
   "EXECUTOR_ENV_READY": "Ready"
-  "SOCK_SHARE_PATH": ""
   "WATCHER_SOCK_PATH": "/socket/watcher.sock"
   "RUNNER_SOCK_PATH": "/socket/runner.sock"
   "COLLECTOR_SOCK_PATH": "/socket/collector.sock"
+  "TARGET_INTERFACE_NAME": "eth0"
 ---
 apiVersion: v1
 kind: Pod

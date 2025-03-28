@@ -11,8 +11,6 @@ import (
   "github.com/tori209/data-executor/watcher/bpf"
 )
 
-// collectorSocketPath = os.Getenv("COLLECTOR_SOCK_PATH")
-
 func main() {
 	if os.Getenv("EXECUTOR_ENV_READY") != "Ready" {
 		log.Fatalf("Environment is not set. Apply ConfigMap in config/executor-pod.yaml.")
@@ -25,6 +23,10 @@ func main() {
 	collectorSocketPath := os.Getenv("COLLECTOR_SOCK_PATH")
 	if collectorSocketPath == "" {
 		log.Fatalf("COLLECTOR_SOCK_PATH not found in env")
+	}
+	targetInterfaceName := os.Getenv("TARGET_INTERFACE_NAME")
+	if targetInterfaceName == "" {
+		log.Fatalf("TARGET_INTERFACE_NAME not found in env")
 	}
 
 	if _, err := os.Stat(socketPath); err == nil {
@@ -45,6 +47,7 @@ func main() {
 		"unix",
 		uint32(1024),
 	)
+	capture.StartCapture(targetInterfaceName)
 
 	// Runner와의 통신.
 	for {

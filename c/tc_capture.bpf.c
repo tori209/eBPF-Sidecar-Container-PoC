@@ -26,11 +26,11 @@ typedef struct {
 struct {
 	__uint(type, BPF_MAP_TYPE_RINGBUF);
 	__uint(max_entries, 1 << 24);
-} log_map SEC(".maps");
+} egress_metrics SEC(".maps");
 
 
 SEC("tcx/egress")
-int tc_ingress(struct __sk_buff *ctx)
+int tc_egress_capture(struct __sk_buff *ctx)
 {
 	void *data = (void *)(__u64)ctx->data;
 	void *data_end = (void *)(__u64)ctx->data_end;
@@ -55,7 +55,7 @@ int tc_ingress(struct __sk_buff *ctx)
 		return TCX_NEXT;
 
 	// Allocate Space of Ringbuf for data
-	event = bpf_ringbuf_reserve(&log_map, sizeof(*event), 0);
+	event = bpf_ringbuf_reserve(&egress_metrics, sizeof(*event), 0);
 	if (!event) {
 		bpf_printk("Error: ringbuf allocation failed");
 		return TCX_NEXT;
