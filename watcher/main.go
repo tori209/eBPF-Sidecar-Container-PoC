@@ -57,6 +57,7 @@ func main() {
 	}
 }
 
+// 이건 나중에 따로 빼자.
 func handleConn(conn net.Conn, capture *bpf.BpfTrafficCapture) {
 	defer conn.Close()
 

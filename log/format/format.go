@@ -1,5 +1,12 @@
 package format
 
+import (
+	"fmt"
+	"encoding/binary"
+	"net"
+	"github.com/google/uuid"
+)
+
 type ReportType int
 const (
 	TaskStart	ReportType	= iota
@@ -32,4 +39,47 @@ type L4Metric struct {
 	DPort	uint16
 	Size	uint32
 	L4Proto	uint8
+}
+
+func (msg *L4Message) String() string {
+	return fmt.Sprintf(
+		"JobID: %s, TaskID: %s\t%s",
+		uuid.UUID(msg.JobID).String(),
+		uuid.UUID(msg.TaskID).String(),
+		msg.L4Metric.String(),
+	)
+}
+
+func (msg *L4Metric) String() string {
+	return fmt.Sprintf(
+		"[%d] (%s) %s:%d -> %s:%d (Size: %d)",
+		msg.TS,
+		GetL4ProtoString(msg.L4Proto),
+		IpToString(msg.SrcIP),
+		msg.SPort,
+		IpToString(msg.DstIP),
+		msg.DPort,
+		msg.Size,
+	)
+}
+
+func GetL4ProtoString(proto_id uint8) string {
+	switch proto_id {
+	case 0:
+		return "IP"
+	case 1:
+		return "ICMP"
+	case 6:
+		return "TCP"
+	case 17:
+		return "UDP"
+	default:
+		return "Unknown"
+	}
+}
+
+func IpToString(ip uint32) string {
+	b := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b, ip)
+	return net.IP(b).String()
 }
