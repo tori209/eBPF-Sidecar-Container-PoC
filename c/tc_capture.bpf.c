@@ -4,8 +4,6 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
-#include "tc_capture.h"
-
 #define ETH_P_IP  0x0800 /* Internet Protocol packet	*/
 /* https://elixir.bootlin.com/linux/v6.8/source/include/uapi/linux/in.h */
 #define IPPROTO_IP		0
@@ -38,6 +36,7 @@ int tc_ingress(struct __sk_buff *ctx)
 	void *data_end = (void *)(__u64)ctx->data_end;
 	struct ethhdr *eth;
 	struct iphdr *ip;
+	l4_metric * event;
 
 	if (ctx->protocol != bpf_htons(ETH_P_IP))
 		return TCX_NEXT;
@@ -55,11 +54,6 @@ int tc_ingress(struct __sk_buff *ctx)
 	if (ip->protocol != IPPROTO_TCP)
 		return TCX_NEXT;
 
-	// Extract TCP Header
-	l4 = (void *)ip + (ip->ihl * 4);
-	if ((void *)(l4 + 1) > data_end)
-		return TCX_NEXT;
-
 	// Allocate Space of Ringbuf for data
 	event = bpf_ringbuf_reserve(&log_map, sizeof(*event), 0);
 	if (!event) {
@@ -67,13 +61,11 @@ int tc_ingress(struct __sk_buff *ctx)
 		return TCX_NEXT;
 	}
 	// init memory
-	__builtin_memset(event, 0, sizeof(struct http_event));
+	__builtin_memset(event, 0, sizeof(l4_metric));
 
 	event->timestamp_ns = bpf_ktime_get_tai_ns();
 	event->src_ip = ip->saddr;
 	event->dst_ip = ip->daddr;
-	event->sport
-	event->dport
 	event->size = ctx->len;
 	event->l4proto = ip->protocol;
 
@@ -81,39 +73,39 @@ int tc_ingress(struct __sk_buff *ctx)
 		case IPPROTO_TCP:
 		struct tcphdr *tcph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(tcph + 1) > data_end) {
-			bpf_ringbuf_discard(e, 0);
+			bpf_ringbuf_discard(event, 0);
 			return XDP_PASS;
 		}
-		e->sport = bpf_ntohs(tcp->source);
-		e->dport = bpf_ntohs(tcp->dest);
+		event->sport = bpf_ntohs(tcph->source);
+		event->dport = bpf_ntohs(tcph->dest);
 		break;
 
 		case IPPROTO_UDP:
 		struct udphdr *udph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(udph + 1) > data_end) {
-			bpf_ringbuf_discard(e, 0);
+			bpf_ringbuf_discard(event, 0);
 			return XDP_PASS;
 		}
-		e->sport = udph->source;
-		e->dport = udph->dest;
+		event->sport = udph->source;
+		event->dport = udph->dest;
 		break;
 
 		case IPPROTO_ICMP:
 		struct icmphdr *icmph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(icmph + 1) > data_end) {
-			bpf_ringbuf_discard(e, 0);
+			bpf_ringbuf_discard(event, 0);
 			return XDP_PASS;
 		}
 		// No port for ICMP
-		e->sport = 0;
-		e->dport = 0;
+		event->sport = 0;
+		event->dport = 0;
 		break;
 
 		default:	
-		e->sport = 0;
-		e->dport = 0;
+		event->sport = 0;
+		event->dport = 0;
 	}
-    bpf_ringbuf_submit(e, 0);
+    bpf_ringbuf_submit(event, 0);
     return XDP_PASS;
 }
 
