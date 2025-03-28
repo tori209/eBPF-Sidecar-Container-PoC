@@ -7,44 +7,57 @@ import (
   "net"
   "encoding/gob"
 
-  "github.com/google/uuid"
   "github.com/tori209/data-executor/log/format"
+  "github.com/tori209/data-executor/watcher/bpf"
 )
 
 // collectorSocketPath = os.Getenv("COLLECTOR_SOCK_PATH")
 
 func main() {
-	if (os.Getenv("EXECUTOR_ENV_READY") != "Ready") {
+	if os.Getenv("EXECUTOR_ENV_READY") != "Ready" {
 		log.Fatalf("Environment is not set. Apply ConfigMap in config/executor-pod.yaml.")
 	}
 
 	socketPath := os.Getenv("WATCHER_SOCK_PATH")
-	if (socketPath == "") {
+	if socketPath == "" {
 		log.Fatalf("Env Not Set")
+	}
+	collectorSocketPath := os.Getenv("COLLECTOR_SOCK_PATH")
+	if collectorSocketPath == "" {
+		log.Fatalf("COLLECTOR_SOCK_PATH not found in env")
 	}
 
 	if _, err := os.Stat(socketPath); err == nil {
 		os.Remove(socketPath)
 	}
 	
-	listener, err := net.Listen("unix", socketPath)
+	// Socket 생성
+	watcher_listener, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatalf("Failed to create Socket: %+v", err)
 	}
-	defer listener.Close()
+	defer os.Remove(socketPath)
+	defer watcher_listener.Close()
 	log.Printf("Start")
 
+	capture := bpf.NewBpfTrafficCapture(
+		collectorSocketPath,
+		"unix",
+		uint32(1024),
+	)
+
+	// Runner와의 통신.
 	for {
-		conn, err := listener.Accept();
+		conn, err := watcher_listener.Accept();
 		if err != nil {
 			log.Printf("Connection Error: %+v\n", err)
 			continue
 		}
-		go handleConn(conn)
+		go handleConn(conn, capture)
 	}
 }
 
-func handleConn(conn net.Conn) {
+func handleConn(conn net.Conn, capture *bpf.BpfTrafficCapture) {
 	defer conn.Close()
 
 	dec := gob.NewDecoder(conn)
@@ -59,7 +72,36 @@ func handleConn(conn net.Conn) {
 			log.Printf("Read Failed: %+v\n", err)
 			break
 		}
-		u:=uuid.UUID(msg.Data)
-		log.Printf("%s / Type: %d", u.String(), msg.Kind)
+
+		// Case Handling
+		if msg.Kind == format.TaskStart {
+			capture.SetTaskID(msg.TaskID)
+			continue
+		}
+
+		if msg.Kind == format.TaskFinish {
+			capture.SetTaskID([16]byte{})
+			continue
+		}
+
+		if msg.Kind == format.JobStart {
+			capture.SetJobID(msg.JobID)
+			continue
+		}
+
+		if msg.Kind == format.JobFinish {
+			capture.SetJobID([16]byte{})
+			continue
+		}
+
+		if msg.Kind == format.ServiceStart {
+			log.Printf("Runner Service Started\n")
+			continue
+		}
+		
+		if msg.Kind == format.ServiceFinish {
+			log.Printf("Runner Service Finished. Terminating...\n")
+			break
+		}
 	}
 }
