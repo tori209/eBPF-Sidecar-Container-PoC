@@ -1,4 +1,5 @@
 SUDO ?= sudo # Docker에서 sudo 쓰지 않게.
+BPFTOOL ?= bpftool
 BUILD_DIR ?= ./bin
 BPF_DIR ?= ./c
 VMLINUX ?= $(BUILD_DIR)/vmlinux.h
@@ -8,7 +9,7 @@ define log_run
 endef
 
 .PHONY: all
-all: user bpf
+all: bpf user
 
 # UserProgram ========================================
 
@@ -41,7 +42,8 @@ $(BUILD_DIR)/%.bpf.o: $(BPF_DIR)/%.bpf.c $(VMLINUX)
 
 $(VMLINUX):
 	$(call log_run, VMLINUX, $<)
-	@$(SUDO) bpftool btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX)
+	@mkdir $(BUILD_DIR)
+	@$(SUDO) $(BPFTOOL) btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX)
 
 # Clean ==============================================
 

@@ -1,10 +1,12 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: collector-cm
-data: []
+  name: collector-env
+data:
+  "COLLECTOR_ENV_READY": "Ready"
+  "COLLECTOR_SOCK_PATH": "/socket/collector.sock"
 ---
-apiVersion: v1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: collector-ds
@@ -13,5 +15,32 @@ metadata:
     purpose: ds-log-collector
 spec:
   selector:
+    matchLabels:
+      app: go-collector-pod
+      purpose: ds-log-collector
   template:
+    metadata:
+      labels:
+        app: go-collector-pod
+        purpose: ds-log-collector
+    spec:
+      volumes:
+      - name: socket-dir
+        hostPath:
+          type: DirectoryOrCreate
+          path: /var/run/ebpf-sidecar-poc
+      containers:
+      - name: collector
+        image: tori209/ebpf-sidecar-poc:0.2
+        imagePullPolicy: "Always"
+        command: ["bin/collector"]
+        workingDir: "/go/src/executor"
+        volumeMounts:
+        - name: socket-dir
+          mountPath: /socket
+        envFrom:
+        - configMapRef:
+            name: collector-env
+      imagePullSecrets:
+      - name: regcred
 

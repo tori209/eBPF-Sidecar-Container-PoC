@@ -30,7 +30,8 @@ func main() {
 	var msg format.ReportMessage
 	msgUUID := uuid.New()
 	msg.Kind = format.ServiceStart
-	msg.Data = msgUUID
+	msg.JobID = msgUUID
+	msg.TaskID = msgUUID
 	
 	err := enc.Encode(msg)
 	if err != nil {

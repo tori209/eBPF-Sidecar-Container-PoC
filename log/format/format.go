@@ -33,8 +33,8 @@ type L4Message struct {
 
 type L4Metric struct {
 	TS		uint64
-    SrcIP   uint32
-    DstIP   uint32
+	SrcIP   uint32
+	DstIP   uint32
 	SPort	uint16
 	DPort	uint16
 	Size	uint32
@@ -43,10 +43,10 @@ type L4Metric struct {
 
 func (msg *L4Message) String() string {
 	return fmt.Sprintf(
-		"JobID: %s, TaskID: %s\t%s",
+		"%s\tJobID: %s, TaskID: %s",
+		msg.L4Metric.String(),
 		uuid.UUID(msg.JobID).String(),
 		uuid.UUID(msg.TaskID).String(),
-		msg.L4Metric.String(),
 	)
 }
 

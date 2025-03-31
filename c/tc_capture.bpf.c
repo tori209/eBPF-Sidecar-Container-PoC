@@ -32,10 +32,16 @@ struct {
 SEC("tcx/egress")
 int tc_egress_capture(struct __sk_buff *ctx)
 {
+	if (bpf_skb_pull_data(ctx, ctx->len) != 0)
+		return TCX_NEXT;
+
 	void *data = (void *)(__u64)ctx->data;
 	void *data_end = (void *)(__u64)ctx->data_end;
 	struct ethhdr *eth;
 	struct iphdr *ip;
+	struct tcphdr *tcph;
+	struct udphdr *udph;
+	struct icmphdr *icmph;
 	l4_metric * event;
 
 	if (ctx->protocol != bpf_htons(ETH_P_IP))
@@ -50,8 +56,6 @@ int tc_egress_capture(struct __sk_buff *ctx)
 	// Extract IP Header
 	ip = (struct iphdr *)(eth + 1);
 	if ((void *)(ip + 1) > data_end)
-		return TCX_NEXT;
-	if (ip->protocol != IPPROTO_TCP)
 		return TCX_NEXT;
 
 	// Allocate Space of Ringbuf for data
@@ -69,43 +73,39 @@ int tc_egress_capture(struct __sk_buff *ctx)
 	event->size = ctx->len;
 	event->l4proto = ip->protocol;
 
-	switch (ip->protocol) {
-		case IPPROTO_TCP:
-		struct tcphdr *tcph = (void *)((__u8 *)ip + (ip->ihl * 4));
+	if (ip->protocol == IPPROTO_TCP) {
+		tcph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(tcph + 1) > data_end) {
+			bpf_printk("Error: TCP Protocol Capture Failed");
 			bpf_ringbuf_discard(event, 0);
-			return XDP_PASS;
-		}
+			return TCX_NEXT;
+		} 
 		event->sport = bpf_ntohs(tcph->source);
 		event->dport = bpf_ntohs(tcph->dest);
-		break;
-
-		case IPPROTO_UDP:
-		struct udphdr *udph = (void *)((__u8 *)ip + (ip->ihl * 4));
+	} else if (ip->protocol == IPPROTO_UDP) {
+		udph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(udph + 1) > data_end) {
+			bpf_printk("Error: UDP Protocol Capture Failed");
 			bpf_ringbuf_discard(event, 0);
-			return XDP_PASS;
+			return TCX_NEXT;
 		}
-		event->sport = udph->source;
-		event->dport = udph->dest;
-		break;
-
-		case IPPROTO_ICMP:
-		struct icmphdr *icmph = (void *)((__u8 *)ip + (ip->ihl * 4));
+		event->sport = bpf_ntohs(udph->source);
+		event->dport = bpf_ntohs(udph->dest);
+	} else if (ip->protocol == IPPROTO_ICMP) {
+		icmph = (void *)((__u8 *)ip + (ip->ihl * 4));
 		if ((void *)(icmph + 1) > data_end) {
+			bpf_printk("Error: ICMP Protocol Capture Failed");
 			bpf_ringbuf_discard(event, 0);
-			return XDP_PASS;
+			return TCX_NEXT;
 		}
-		// No port for ICMP
 		event->sport = 0;
 		event->dport = 0;
-		break;
-
-		default:	
+	} else {
 		event->sport = 0;
 		event->dport = 0;
 	}
+
     bpf_ringbuf_submit(event, 0);
-    return XDP_PASS;
+    return TCX_NEXT;
 }
 
