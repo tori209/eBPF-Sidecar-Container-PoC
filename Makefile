@@ -1,31 +1,49 @@
-BUILD_DIR=./bin
-BPF_DIR=./c
-VMLINUX=${BPF_DIR}/vmlinux.h
+BUILD_DIR ?= ./bin
+BPF_DIR ?= ./c
+VMLINUX ?= $(BUILD_DIR)/vmlinux.h
+
+define log_run
+	@printf "%-6s %s\n" "$(1)" "$(2)"
+endef
+
+.PHONY: all
+all: user bpf
 
 # UserProgram ========================================
 
-watcher: bin/watcher
+USER_PROGRAM := watcher runner collector
 
-runner: bin/runner
+.PHONY: user
+user: $(USER_PROGRAM)
 
-collector: bin/collector
+.PHONY: $(USER_PROGRAM)
+$(USER_PROGRAM): %: $(BUILD_DIR)/% 
 
+# Build Go File
 
-bin/watcher: watcher/main.go
-	go build -o bin/watcher ./watcher
-
-bin/runner: runner/main.go
-	go build -o bin/runner ./runner
-
-bin/collector: collector/main.go
-	go build -o bin/collector ./collector
+$(BUILD_DIR)/%: %/main.go $(wildcard ./log/format/*.go)
+	$(call log_run, USER, $<)
+	@go build -o $@ ./$*
 
 # BPF Program ========================================
 
-bpf: tc_capture
+BPF_PROGRAM := tc_capture
 
-tc_capture: ${BPF_DIR}/tc_capture.bpf.c ${VMLINUX}
-	clang -O2 -g -target bpf -I${VMLINUX} -c ${BPF_DIR}/tc_capture.bpf.c -o ${BUILD_DIR}/tc_capture.bpf.o
+.PHONY: bpf $(BPF_PROGRAM)
+bpf: $(BPF_PROGRAM)
 
-${VMLINUX}:
-	sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > ${VMLINUX}
+$(BPF_PROGRAM): %: $(BUILD_DIR)/%.bpf.o 
+
+$(BUILD_DIR)/%.bpf.o: $(BPF_DIR)/%.bpf.c $(VMLINUX)
+	$(call log_run, BPF, $<)
+	@clang -O2 -g -target bpf -I$(BUILD_DIR) -c $< -o $@
+
+$(VMLINUX):
+	$(call log_run, VMLINUX, $<)
+	@sudo bpftool btf dump file /sys/kernel/btf/vmlinux format c > $(VMLINUX)
+
+# Clean ==============================================
+
+clean:
+	$(call log_run, CLEAN, rm -rf $(BUILD_DIR))
+	@rm -rf $(BUILD_DIR)
