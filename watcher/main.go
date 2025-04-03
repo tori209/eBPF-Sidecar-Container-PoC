@@ -12,13 +12,15 @@ import (
 )
 
 func main() {
+	
 	if os.Getenv("EXECUTOR_ENV_READY") != "Ready" {
 		log.Fatalf("Environment is not set. Apply ConfigMap in config/executor-pod.yaml.")
 	}
 
+	log.Printf("Start Initialization.")
 	socketPath := os.Getenv("WATCHER_SOCK_PATH")
 	if socketPath == "" {
-		log.Fatalf("Env Not Set")
+		log.Fatalf("WATCHER_SOCK_PATH not found in env")
 	}
 	collectorSocketPath := os.Getenv("COLLECTOR_SOCK_PATH")
 	if collectorSocketPath == "" {
@@ -29,6 +31,7 @@ func main() {
 		log.Fatalf("TARGET_INTERFACE_NAME not found in env")
 	}
 
+	log.Printf("Create Watcher UDS")
 	if _, err := os.Stat(socketPath); err == nil {
 		os.Remove(socketPath)
 	}
@@ -40,14 +43,15 @@ func main() {
 	}
 	defer os.Remove(socketPath)
 	defer watcher_listener.Close()
-	log.Printf("Start")
+	log.Printf("Watcher UDS created in %s.", socketPath)
 
+	log.Printf("Create/Load BPF Capture")
 	capture := bpf.NewBpfTrafficCapture(
 		collectorSocketPath,
 		"unix",
 		uint32(1024),
 	)
-	capture.StartCapture(targetInterfaceName)
+	go capture.StartCapture(targetInterfaceName)
 
 	// Runner와의 통신.
 	for {

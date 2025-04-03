@@ -117,9 +117,6 @@ func (btc *BpfTrafficCapture) receive_from_ringbuf(rb *ringbuf.Reader) {
 			continue
 		}
 
-		// TODO: 제거
-		log.Printf("%s", e.String())	
-
 		btc.mu.Lock()
 		msg := format.L4Message{
 			L4Metric: e,
