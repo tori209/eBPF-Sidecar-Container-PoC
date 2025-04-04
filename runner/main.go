@@ -48,6 +48,7 @@ func main() {
 	}
 	defer reporter.ReportRunnerFinish()
 
+	// 초기화 후 Task 처리 영역
 	// 한 순간에 하나의 Task만 처리한다고 가정.
 	for {
 		tcpConn, err := reqListener.Accept()
