@@ -22,6 +22,8 @@ func NewCodeRunner(reqMessage format.TaskRequestMessage) (*CodeRunner) {
 	}
 }
 
+// Dummy Task Request
 func (cr *CodeRunner) StartTask() (bool, error) {
+	time.Sleep(5 * time.Second)
 	return true, nil
 }
