@@ -11,9 +11,9 @@ endef
 .PHONY: all
 all: bpf user
 
-# UserProgram ========================================
+# User Program ========================================
 
-USER_PROGRAM := watcher runner collector
+USER_PROGRAM := watcher runner collector driver
 
 .PHONY: user
 user: $(USER_PROGRAM)

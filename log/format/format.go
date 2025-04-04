@@ -22,35 +22,34 @@ const (
 	InternalError
 )
 
-
 // GOB를 통해 간단한 Manager->Executor 통신 구현을 위한 메세지 포맷
 type TaskRequestMessage struct {
-	JobID			[16]byte
-	TaskID			[16]byte
+	JobID			uuid.UUID
+	TaskID			uuid.UUID
 	DataSourceURL	string
 	DestinationURL	string
 	RangeBegin		uint64			
 	RangeEnd		uint64
-	RunAsEvil		bool		// 실행 스크립트를 실제로 전송하기엔... 악성행위 생성용
+	RunAsEvil		bool		// 실행 스크립트를 실제로 전송하기엔... Dummy 악성행위 생성용
 }
 
 type TaskResponseMessage struct {
-	JobID			[16]byte
-	TaskID			[16]byte
+	JobID			uuid.UUID
+	TaskID			uuid.UUID
 	Status			ReportType
 }
 
 // Executor 내 Runner->Watcher 상태 전파를 위한 메세지 포맷
 type ReportMessage struct {
 	Kind	ReportType
-	JobID	[16]byte
-	TaskID	[16]byte
+	JobID	uuid.UUID
+	TaskID	uuid.UUID
 }
 
 // Watcher->Collector Metric 전달용 포맷
 type L4Message struct {
-	JobID		[16]byte // UUID
-	TaskID		[16]byte // UUID
+	JobID		uuid.UUID
+	TaskID		uuid.UUID
 	L4Metric
 }
 
