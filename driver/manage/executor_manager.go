@@ -21,31 +21,32 @@ type ExecutorInfo struct {
 	id			uuid.UUID
 	conn		net.Conn
 	currTask	*format.TaskRequestMessage
-	resChan		*chan format.TaskResponseMessage
+	resChan		chan format.TaskResponseMessage
+	mu			*sync.Mutex
 	ctx			context.Context
 	cancel		context.CancelFunc
 }
 
-func (ei *ExecutorInfo) requestTask(request format.TaskRequestMessage) (chan format.TaskResponseMessage, error) {
+func (ei *ExecutorInfo) requestTask(request format.TaskRequestMessage) error {
 	reqEnc := gob.NewEncoder(ei.conn)
 	resDec := gob.NewDecoder(ei.conn)
 	
 	if err := reqEnc.Encode(request); err != nil {
-		return nil, err
+		return err
 	}
 	ei.currTask = &request
 
 	// Task로부터 결과 수신 시도.
 	// 현재는 Runner가 Task 성공/실패 시점에만 전송하도록 설정되어 있음.
 	// 즉, 중간에 추가 메세지가 들어올 일이 없다.
-	resCh := make(chan format.TaskResponseMessage)
+	ei.resChan = make(chan format.TaskResponseMessage)
 	go func() {
 		var resMsg format.TaskResponseMessage
 		for {
 			err := resDec.Decode(&resMsg)
 			if err == nil {
 				// 외부에서 요청 정상 수신
-				resCh <- resMsg
+				ei.resChan <- resMsg
 				return
 			}
 			if errors.Is(err, io.EOF) {
@@ -54,19 +55,21 @@ func (ei *ExecutorInfo) requestTask(request format.TaskRequestMessage) (chan for
 				resMsg.Status = format.TaskFailed
 				resMsg.JobID = request.JobID
 				resMsg.TaskID = request.TaskID
-				resCh <- resMsg
+				ei.resChan <- resMsg
 				return
 			}
 		}
 	}()
 	
-	return resCh, nil
+	return nil
 }
 
 func (ei *ExecutorInfo) clearTask() {
-	close(*ei.resChan)
+	ei.mu.Lock()
+	close(ei.resChan)
 	ei.resChan = nil
 	ei.currTask = nil
+	ei.mu.Unlock()
 }
 
 //====================================================================
@@ -141,18 +144,21 @@ func (em *ExecutorManager) start() {
 				exec_ctx, exec_cancel := context.WithCancel(em.ctx)	
 
 				em.mu.Lock()
+
 				new_id := uuid.New()
 				em.liveMap[new_id] = &ExecutorInfo{
 					id:			new_id,
 					conn: 		conn,
 					resChan:	nil,
+					mu:		new(sync.Mutex),
 					ctx: 		exec_ctx,
 					cancel: 	exec_cancel,
 				}
-				log.Println("[ExecutorManager] New Executor(IP: %s) Connected. Now %d Executors Online.",
+				log.Printf("[ExecutorManager] New Executor(IP: %s) Connected. Now %d Executors Online.",
 					conn.RemoteAddr().String(),
 					len(em.liveMap),
 				)
+
 				em.mu.Unlock()
 			}
 		}
@@ -182,19 +188,20 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 	taskDoneCnt := 0
 	totalTaskCnt := taskList.Len()
 	diedList := make([]uuid.UUID, 0)
-	taskChanMap := make(map[uuid.UUID]chan format.TaskResponseMessage)
 	for {
 		em.mu.RLock()
 		// 현재 살아있는 Executor가 존재하는가?
 		if len(em.liveMap) == 0 {
+			em.mu.RUnlock()
 			return false, errors.New("No available executor")
 		}
 		// Map 순회 시도
 		for id, ei := range em.liveMap {
+			ei.mu.Lock()
 			if (ei.currTask != nil) {
 				// 이미 작업 중, 완료 여부 확인.
 				select {
-				case response := <- *ei.resChan: // 작업 완료
+				case response := <- ei.resChan: // 작업 완료
 					if response.Status == format.TaskFinish {
 						// 작업 성공 시 totalTaskCnt를 +1
 						log.Printf("[ExecutorManager] Task Complete. (JobID: %s / TaskID: %s)", 
@@ -213,26 +220,30 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 						// 이상한 Message 전달. 일단 통과로 치는데, 나중에 잡자.
 						log.Printf("[ExecutorManager] Invalid Status Given: %+v", response)
 					}
+					ei.mu.Unlock()
 					ei.clearTask()
 					continue
 					// 두 경우 모두 완료 시 Continue를 수행하여 패스시켜야 함. 
 				default: // 아직 완료 X, 다음으로 이동
+					ei.mu.Unlock()
 					continue
 				}
 			}
-			if (taskList.Len() == 0) {  continue  } // 현재 부여할 작업 X, 다음 리스트 확인
+			if (taskList.Len() == 0) {
+				ei.mu.Unlock()
+				continue
+			} // 현재 부여할 작업 X, 다음 리스트 확인
 
 			// 할당된 작업 X + 대기 작업이 남아있음
 			currTaskElem := taskList.Front()
 			val, _ := currTaskElem.Value.(*format.TaskRequestMessage)
-			resChan, err := ei.requestTask(*val)
-	
-			if err != nil { // 네트워크 문제로 연결 실패. 
+			if err := ei.requestTask(*val); err != nil { // 네트워크 문제로 연결 실패. 
 				log.Printf("[ExecutorManager] Runner Connection Lost")
 				diedList = append(diedList, id)
+				ei.mu.Unlock()
 				continue
 			} else { // 요청 성공.
-				taskChanMap[id] = resChan
+				ei.mu.Unlock()
 				taskList.Remove(currTaskElem)
 			}
 	    }

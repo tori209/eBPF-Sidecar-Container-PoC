@@ -67,8 +67,8 @@ func (msg *L4Message) String() string {
 	return fmt.Sprintf(
 		"%s\tJobID: %s, TaskID: %s",
 		msg.L4Metric.String(),
-		uuid.UUID(msg.JobID).String(),
-		uuid.UUID(msg.TaskID).String(),
+		msg.JobID.String(),
+		msg.TaskID.String(),
 	)
 }
 

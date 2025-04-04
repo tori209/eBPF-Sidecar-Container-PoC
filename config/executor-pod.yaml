@@ -4,17 +4,19 @@ metadata:
   name: executor-env
 data:
   "EXECUTOR_ENV_READY": "Ready"
+  "DRIVER_CONTACT_FQDN": "driver-svc.default.svc.cluster.local:8080"
   "WATCHER_SOCK_PATH": "/socket/watcher.sock"
   "RUNNER_SOCK_PATH": "/socket/runner.sock"
   "COLLECTOR_SOCK_PATH": "/socket/collector.sock"
   "TARGET_INTERFACE_NAME": "eth0"
 ---
+# Deploy로 수정해야할 듯?
 apiVersion: v1
 kind: Pod
 metadata:
   name: executor
   labels:
-    app: data-executor
+    app: executor
 spec:
   volumes:
   - name: socket-dir
@@ -25,9 +27,10 @@ spec:
       path: /var/run/ebpf-sidecar-poc/collector.sock
   containers:
   - name: runner
-    image: tori209/ebpf-sidecar-poc:0.3
+    image: tori209/ebpf-sidecar-poc:0.4
     imagePullPolicy: "Always"
-    command: ["sh", "-c", "sleep infinity"]
+    #command: ["sh", "-c", "sleep infinity"]
+    command: ["./runner"]
     workingDir: "/go/src/executor/bin"
     volumeMounts:
     - name: socket-dir
@@ -36,7 +39,7 @@ spec:
     - configMapRef:
         name: executor-env
   - name: watcher
-    image: tori209/ebpf-sidecar-poc:0.3
+    image: tori209/ebpf-sidecar-poc:0.4
     imagePullPolicy: "Always"
     command: ["./watcher"]
     workingDir: "/go/src/executor/bin"

@@ -19,8 +19,6 @@ import (
   "github.com/cilium/ebpf/ringbuf"
 )
 
-const DEFAULT_IFACE_NAME="eth0"
-
 type BpfTrafficCapture struct {
 	mu			*sync.Mutex	
 	logManager	*logger.MetricManager

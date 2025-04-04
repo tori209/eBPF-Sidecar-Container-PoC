@@ -60,7 +60,7 @@ func main() {
 			log.Printf("Connection Error: %+v\n", err)
 			continue
 		}
-		go handleConn(conn, capture)
+		handleConn(conn, capture)
 	}
 }
 

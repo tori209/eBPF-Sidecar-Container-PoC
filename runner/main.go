@@ -38,38 +38,38 @@ func main() {
 	defer watcherConn.Close()
 	log.Printf("[Runner] Connection to Watcher established.")
 
-	log.Printf("[Runner] Try to Connect to Driver...")
-	var reqListener net.Listener
-	for {
-		listener, err := net.Listen("tcp", "0.0.0.0:8080")
-		if err == nil {
-			reqListener = listener
-			break
-		}
-		log.Printf("[Runner] Failed to create listening socket: %+v", err)
-		time.Sleep(1 * time.Second)
-	}
-	defer reqListener.Close()
-	log.Printf("[Runner] Connection to Driver established.")
-
+	// Watcher와의 연결 시도.
 	reporter := report.NewReporter(watcherConn)
 	if err := reporter.ReportRunnerStart(); err != nil {
 		log.Fatalf("[Runner] Failed to send Report: %+v", err)
 	}
 	defer reporter.ReportRunnerFinish()
 
-	log.Printf("[Runner] Waiting for new task...")
+	// Driver와의 연결 시도.
+	// TODO: KeepAlive 설정 되던가?
+	log.Printf("[Runner] Try to Connect to Driver...")
+	var driverConn net.Conn
+	for {
+		conn, err := net.Dial("tcp", driverContactFQDN)
+		if err == nil {
+			driverConn = conn
+			break
+		}
+		log.Printf("[Runner] Failed to create listening socket: %+v", err)
+		time.Sleep(1 * time.Second)
+	}
+	defer driverConn.Close()
+	log.Printf("[Runner] Connection to Driver established.")
+
+	// 초기화 완료 =================================================================
+
 	// 초기화 후 Task 처리 영역
 	// 한 순간에 하나의 Task만 처리한다고 가정.
+
+	reqDec := gob.NewDecoder(driverConn)
+	resEnc := gob.NewEncoder(driverConn)
+	log.Printf("[Runner] Waiting for new task...")
 	for {
-		tcpConn, err := reqListener.Accept()
-		if err != nil {
-			log.Printf("[Runner] Failed to receive task request: %+v", err)
-			continue
-		}
-		log.Printf("[Runner] Received New Task!")
-		reqDec := gob.NewDecoder(tcpConn)
-		resEnc := gob.NewEncoder(tcpConn)
 
 		var reqMsg format.TaskRequestMessage
 		var resMsg format.TaskResponseMessage
@@ -79,24 +79,24 @@ func main() {
 			log.Printf("[Runner] TaskRequest Decode failed: %+v", err)
 			resMsg.Status = format.MessageBroken
 			resEnc.Encode(resMsg)
-			tcpConn.Close()
 			continue
 		}
+		log.Printf("[Runner] Received New Task!")
 		
 		cr := coderunner.NewCodeRunner(reqMsg) 
 
 		// Report Task Start to Watcher
 		var i int
 		for i = 0; i < 5; i++ {
-			if err := reporter.ReportTaskStart(reqMsg.JobID, reqMsg.TaskID); err == nil {
-				break
-			}
-			log.Printf("[Runner] Reporter Failed to send runner start. Wait...: %+v",err)
-			time.Sleep(3 * time.Second)
+			if err := reporter.ReportTaskStart(reqMsg.JobID, reqMsg.TaskID); err != nil {
+				log.Printf("[Runner] Reporter Failed to send runner start. Wait...: %+v",err)
+				time.Sleep(3 * time.Second)
+			} else {  break  }
 		}
 		if (i == 5) {
 			log.Fatalf("[Runner] Reporter Failed to send to watcher. Seems like wathcer died. Shutdown...")
 		}
+		log.Printf("[Runner] Task Start Reported.")
 
 
 		// Start Task (Block Exec)
@@ -111,7 +111,8 @@ func main() {
 		for i = 0; i < 5; i++ {
 			if err := reporter.ReportTaskResult(result); err != nil {
 				log.Printf("[Runner] Reporter Failed to send task result. Wait...: %+v",err)
-			}
+				time.Sleep(3 * time.Second)
+			} else {  break;  }
 		}
 		if (i == 5) {
 			log.Fatalf("[Runner] Reporter Failed to send to watcher. Seems like wathcer died. Shutdown...")
@@ -126,11 +127,11 @@ func main() {
 		} else {
 			resMsg.Status = format.TaskFailed
 		}
+
 		if err := resEnc.Encode(resMsg); err != nil {
 			log.Printf("[Runner] TaskResponse Encode failed: %+v", err)
 		} else {
 			log.Printf("[Runner] Task Done.")
 		}
-		tcpConn.Close()
 	}
 }

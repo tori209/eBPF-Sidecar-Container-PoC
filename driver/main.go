@@ -6,15 +6,13 @@ import (
 	"time"
 	"strconv"
 	
+	"github.com/google/uuid"
 	"github.com/tori209/data-executor/driver/manage"
+	"github.com/tori209/data-executor/log/format"
 )
 
 func main() {
 	// Check env =====================
-	controlPort := os.Getenv("DRIVER_CONTROL_PORT")
-	if controlPort == "" {
-		log.Fatalf("DRIVER_CONTROL_PORT not found in env.")
-	}
 	str_num := os.Getenv("DESIRED_EXECUTOR_NUMBER")
 	if str_num == "" {
 		log.Fatalf("DESIRED_EXECUTOR_NUMBER not found in env.")
@@ -26,18 +24,34 @@ func main() {
 	
 	// Create Manager ================
 	var em *manage.ExecutorManager
-	if manager, err := manage.NewExecutorManager(controlPort); err != nil {
+	if manager, err := manage.NewExecutorManager(":8080"); err != nil {
 		log.Fatalf("[Driver/main] Failed to create manager: %+v", err)
 	} else {
 		em = manager
 	}
+	log.Printf("[Driver/main] ")
 
+	// 요청 받는 것만 확인.
 	for {
 		cnt := em.CountOnlineExecutor() 
 		if cnt >= desiredExecutorNum {  break  }
 		log.Printf("[Driver/main] Waiting executors being online... Current: %d", cnt)
 		time.Sleep(time.Second)
 	}
+	log.Printf("[Driver/main] Desired Number fulfilled.")
+
+	em.ProcessJob(
+		format.TaskRequestMessage{
+			JobID: uuid.New(),
+			TaskID: uuid.New(),
+			DataSourceURL: "",
+			DestinationURL: "",
+			RangeBegin:	0,
+			RangeEnd:	1000,
+			RunAsEvil: false,
+		},
+		100,
+	)
 
 	em.Destroy()
 }

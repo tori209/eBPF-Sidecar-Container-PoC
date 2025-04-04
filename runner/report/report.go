@@ -4,8 +4,8 @@ import (
 	"net"
 	"encoding/gob"
 	"log"
-//	"time"
-	"errors"
+	"sync"
+//	"errors"
 	
 	"github.com/tori209/data-executor/log/format"
 )
@@ -19,19 +19,25 @@ type Reporter struct {
 	jobID		[16]byte
 	taskID		[16]byte
 	taskRunning	bool
+	mu			*sync.Mutex
 }
 
 func NewReporter(conn net.Conn) (*Reporter) {
 	return &Reporter{
 		reportEnc: gob.NewEncoder(conn),
+		taskRunning: false,
+		mu:	new(sync.Mutex),
 	}
 }
 
 func (r *Reporter) ReportTaskStart(JobID, TaskID [16]byte) error {
-	if r.taskRunning {  
-		return errors.New("Task Not yet Finished")
+	r.mu.Lock()
+	defer r.mu.Unlock()
+/*
+	if r.taskRunning == true {  
+		return errors.New("[Reporter.ReportTaskResult] Another Task is assigned.")
 	}
-
+*/
 	err := r.reportEnc.Encode(format.ReportMessage{
 		Kind: format.TaskStart,
 		JobID: JobID,
@@ -49,10 +55,13 @@ func (r *Reporter) ReportTaskStart(JobID, TaskID [16]byte) error {
 }
 
 func (r *Reporter) ReportTaskResult(success bool) error {
-	if !r.taskRunning {  
-		return errors.New("Task Not yet Finished")
+	r.mu.Lock()
+	defer r.mu.Unlock()
+/*
+	if r.taskRunning == false {  
+		return errors.New("[Reporter.ReportTaskResult] Task Not Running")
 	}
-
+*/
 	var reportKind format.ReportType
 	if success {
 		reportKind = format.TaskFinish

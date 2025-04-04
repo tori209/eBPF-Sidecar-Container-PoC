@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driver-env
+data:
+  "DRIVER_ENV_READY": "Ready"
+  "DESIRED_EXECUTOR_NUMBER": "1"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: driver
+  labels:
+    app: driver
+spec:
+  containers:
+  - name: manager
+    image: tori209/ebpf-sidecar-poc:0.4
+    imagePullPolicy: "Always"
+    command: ["./driver"]
+    workingDir: "/go/src/executor/bin"
+    ports:
+    - containerPort: 8080
+      name: executor-port
+    envFrom:
+    - configMapRef:
+        name: driver-env
+  imagePullSecrets:
+  - name: regcred
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: driver-svc
+  labels:
+    app: driver-svc
+spec:
+  selector:
+    app: driver
+  ports:
+  - name: executor-svc-port
+    protocol: TCP
+    port: 8080
+    targetPort: executor-port
+
