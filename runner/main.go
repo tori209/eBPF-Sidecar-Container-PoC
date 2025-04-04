@@ -20,22 +20,24 @@ func main() {
 
 	var watcherConn net.Conn
 	for {
-		if con, err := net.Dial("unix", socketPath); err == nil {
+		con, err := net.Dial("unix", socketPath)
+		if err == nil {
 			watcherConn = con
 			break
 		}
-		log.Printf("Failed to connect socket %s. Retry...", socketPath)
+		log.Printf("Failed to connect socket %s: %+v", socketPath, err)
 		time.Sleep(1 * time.Second)
 	}
 	defer watcherConn.Close()
 
 	var reqListener net.Listener
 	for {
-		if listener, err := net.Listen("tcp", "0.0.0.0:8080"); err == nil {
+		listener, err := net.Listen("tcp", "0.0.0.0:8080")
+		if err == nil {
 			reqListener = listener
 			break
 		}
-		log.Printf("Failed to create socket. Retry...")
+		log.Printf("Failed to create listening socket: %+v", err)
 		time.Sleep(1 * time.Second)
 	}
 	defer reqListener.Close()
