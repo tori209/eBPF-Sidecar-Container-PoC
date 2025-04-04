@@ -102,12 +102,12 @@ func handleConn(conn net.Conn, capture *bpf.BpfTrafficCapture) {
 			continue
 		}
 
-		if msg.Kind == format.ServiceStart {
+		if msg.Kind == format.RunnerStart {
 			log.Printf("Runner Service Started\n")
 			continue
 		}
 		
-		if msg.Kind == format.ServiceFinish {
+		if msg.Kind == format.RunnerFinish {
 			log.Printf("Runner Service Finished. Terminating...\n")
 			break
 		}
