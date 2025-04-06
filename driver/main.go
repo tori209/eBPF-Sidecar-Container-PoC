@@ -45,11 +45,11 @@ func main() {
 			TaskID: uuid.New(),
 			DataSourceURL: "",
 			DestinationURL: "",
-			RangeBegin:	0,
-			RangeEnd:	1000,
+			RangeBegin:	uint64(0),
+			RangeEnd:	uint64(1000),
 			RunAsEvil: false,
 		},
-		100,
+		uint64(100),
 	)
 
 	em.Destroy()

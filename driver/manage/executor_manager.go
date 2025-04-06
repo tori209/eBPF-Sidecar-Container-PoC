@@ -245,7 +245,7 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 
 	// Job을 Range 단위로 쪼개어 Task로 분할
 	taskList := list.New()
-	for pivot := request.RangeBegin; pivot < request.RangeEnd; pivot++ {
+	for pivot := request.RangeBegin; pivot < request.RangeEnd; pivot = pivot + sliceSize {
 		task := request
 		task.TaskID = uuid.New()
 		task.RangeBegin = pivot
@@ -260,6 +260,8 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 	taskDoneCnt := 0
 	totalTaskCnt := taskList.Len()
 	diedList := make([]string, 0)
+
+	log.Printf("[ExecutorManager] Total #task: %d", totalTaskCnt) 
 	for {
 		em.mu.RLock()
 		// 현재 살아있는 Executor가 존재하는가?
