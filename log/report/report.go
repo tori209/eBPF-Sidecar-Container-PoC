@@ -20,24 +20,24 @@ type Reporter struct {
 func NewReporter(protocol, targetPath string) (*Reporter) {
 	return &Reporter{
 		proto: protocol,
-		targetPath: socketPath,
+		targetPath: targetPath,
 	}
 }
 
 //============================================================
 
-func (r *Reporter) createConnection() (*net.Conn, error) {
+func (r *Reporter) createConnection() (net.Conn, error) {
 	conn, err := net.Dial(r.proto, r.targetPath)
 	if err != nil {
 		log.Printf("[Reporter.createConnection] Failed to create Connection")
 		return nil, err
 	}
-	return &conn, err
+	return conn, err
 }
 
 //============================================================
 
-func (r *Reporter) ReportTaskStart(JobID, TaskID uuid.UUID) error {
+func (r *Reporter) ReportTaskStart(jobID, taskID uuid.UUID) error {
 	conn, err := r.createConnection()
 	if err != nil {
 		log.Printf("[Reporter.ReportTaskStart] Failed to create Connection %+v:", err)
@@ -47,21 +47,21 @@ func (r *Reporter) ReportTaskStart(JobID, TaskID uuid.UUID) error {
 	reportEnc := gob.NewEncoder(conn)
 
 	// Message Send
-	err := reportEnc.Encode(format.ReportMessage{
+	err = reportEnc.Encode(format.ReportMessage{
 		Kind: format.TaskStart,
-		JobID: JobID,
-		TaskID: TaskID,
+		JobID: jobID,
+		TaskID: taskID,
 	})
 	if err != nil {
 		log.Printf("[Reporter.ReportTaskStart] Report Message Send Failed (JobID: %s, TaskID: %s) %+v:",
-			r.jobID.String(),
-			r.taskID.String(),
+			jobID.String(),
+			taskID.String(),
 			err,
 		)
 	} else {
 		log.Printf("[Reporter.ReportTaskStart] Report Task Start (JobID: %s, TaskID: %s)",
-			r.jobID.String(),
-			r.taskID.String(),
+			jobID.String(),
+			taskID.String(),
 		)
 	}
 
@@ -70,7 +70,7 @@ func (r *Reporter) ReportTaskStart(JobID, TaskID uuid.UUID) error {
 
 //============================================================
 
-func (r *Reporter) ReportTaskResult(success bool, JobID, TaskID uuid.UUID) error {
+func (r *Reporter) ReportTaskResult(success bool, jobID, taskID uuid.UUID) error {
 	conn, err := r.createConnection()
 	if err != nil {
 		log.Printf("[Reporter.ReportTaskResult] Failed to create Connection %+v:", err)
@@ -86,10 +86,10 @@ func (r *Reporter) ReportTaskResult(success bool, JobID, TaskID uuid.UUID) error
 		reportKind = format.TaskFailed
 	}
 
-	err := reportEnc.Encode(format.ReportMessage{
+	err = reportEnc.Encode(format.ReportMessage{
 		Kind: reportKind,
-		JobID: r.jobID,
-		TaskID: r.taskID,
+		JobID: jobID,
+		TaskID: taskID,
 	})
 	if err != nil {
 		log.Printf("[Reporter.ReportTaskResult] Report Message Send Failed %+v:", err)
@@ -131,7 +131,7 @@ func (r *Reporter) ReportRunnerFinish() error {
 	reportEnc := gob.NewEncoder(conn)
 
 
-	if err := r.reportEnc.Encode(format.ReportMessage{
+	if err := reportEnc.Encode(format.ReportMessage{
 		Kind: format.RunnerFinish,
 	}); err != nil {
 		log.Printf("[Reporter.ReportRunnerFinish] Report Message Send Failed: %+v", err)

@@ -1,13 +1,14 @@
 package manage
 
 import (
-	"io"
+	"os"
 	"net"
+	"net/rpc"
+	"encoding/gob"
 	"log"
 	"sync"
 	"context"
 	"errors"
-	"encoding/gob"
 	"container/list"
 
 	"github.com/tori209/data-executor/log/format"
@@ -16,67 +17,93 @@ import (
 
 //====================================================================
 
-// 생성은 ExecutorManager.start의 Goroutine에서 알아서 함.
-type ExecutorInfo struct {
-	id			uuid.UUID
-	conn		net.Conn
-	currTask	*format.TaskRequestMessage
-	resChan		chan format.TaskResponseMessage
-	mu			*sync.Mutex
+type ExecutorInfoOption struct {
+	address		string
+	rpcPort		string
+	proto		string
 	ctx			context.Context
-	cancel		context.CancelFunc
 }
 
-func (ei *ExecutorInfo) requestTask(request format.TaskRequestMessage) error {
-	reqEnc := gob.NewEncoder(ei.conn)
-	resDec := gob.NewDecoder(ei.conn)
-	
-	if err := reqEnc.Encode(request); err != nil {
+// 생성은 ExecutorManager.start의 Goroutine에서 알아서 함.
+type ExecutorInfo struct {
+	contactURL		string
+	contactProto	string
+	id				uuid.UUID
+	currTask		*format.TaskRequestMessage
+	resChan			chan format.TaskResponseMessage
+	mu				*sync.RWMutex
+	ctx				context.Context
+	cancel			context.CancelFunc
+}
+
+func NewExecutorInfo(opt *ExecutorInfoOption) (*ExecutorInfo) {
+	if opt.ctx == nil {  opt.ctx = context.Background()  }
+	ctx, cancel := context.WithCancel(opt.ctx)
+
+	if opt.rpcPort[0] != ':' { opt.rpcPort = ":" + opt.rpcPort }
+
+	return &ExecutorInfo{
+		contactURL:		opt.address + opt.rpcPort,
+		contactProto:	opt.proto,
+		id:			uuid.New(),
+		currTask:	nil,
+		resChan:	nil, 	// requestTask 발생 시 새로 할당.
+		mu:			new(sync.RWMutex),
+		ctx:		ctx,
+		cancel:		cancel,
+	}
+}
+
+func (ei *ExecutorInfo) requestTask(request *format.TaskRequestMessage) error {
+	ei.assignTask(request)
+
+	ei.mu.RLock()
+
+	client, err := rpc.Dial(ei.contactProto, ei.contactURL)
+	if err != nil {
+		ei.mu.RUnlock()
+		log.Printf("[Executorinfo.requestTask] Failed to Contact Runner: %+v", err)
+		ei.clearTask()
 		return err
 	}
-	ei.currTask = &request
+	ei.mu.RUnlock()
 
-	// Task로부터 결과 수신 시도.
-	// 현재는 Runner가 Task 성공/실패 시점에만 전송하도록 설정되어 있음.
-	// 즉, 중간에 추가 메세지가 들어올 일이 없다.
-	ei.resChan = make(chan format.TaskResponseMessage)
 	go func() {
-		var resMsg format.TaskResponseMessage
-		for {
-			err := resDec.Decode(&resMsg)
-			if err == nil {
-				// 외부에서 요청 정상 수신
-				ei.resChan <- resMsg
-				return
-			}
-			if errors.Is(err, io.EOF) {
-				// 연결 종료로 메세지 수신 실패.
-				log.Printf("[ExecutorInfo-requestTask] Connection Closed Unexpectedly: %+v", err)
-				resMsg.Status = format.TaskFailed
-				resMsg.JobID = request.JobID
-				resMsg.TaskID = request.TaskID
-				ei.resChan <- resMsg
-				return
-			}
+		var response format.TaskResponseMessage
+		err := client.Call("CodeRunner.StartTask", request, &response)
+		if err != nil {
+			log.Printf("[ExecutorInfo-requestTask] Connection Closed Unexpectedly: %+v", err)
+			response.Status = format.TaskFailed
+			response.JobID = request.JobID
+			response.TaskID = request.TaskID
 		}
+		ei.resChan <- response
 	}()
-	
 	return nil
+}
+
+func (ei *ExecutorInfo) assignTask(request *format.TaskRequestMessage) {
+	ei.mu.Lock()
+	defer ei.mu.Unlock()
+
+	ei.resChan = make(chan format.TaskResponseMessage)
+	ei.currTask = request
 }
 
 func (ei *ExecutorInfo) clearTask() {
 	ei.mu.Lock()
+	defer ei.mu.Unlock()
+
 	close(ei.resChan)
 	ei.resChan = nil
 	ei.currTask = nil
-	ei.mu.Unlock()
 }
 
 //====================================================================
 
 type ExecutorManager struct {
 	listener	net.Listener	
-	liveMap		map[uuid.UUID]*ExecutorInfo
+	liveMap		map[string]*ExecutorInfo
 	ctx			context.Context
 	cancel		context.CancelFunc
 	mu			*sync.RWMutex
@@ -96,7 +123,7 @@ func NewExecutorManager(servicePort string) (*ExecutorManager, error) {
 	
 	em := ExecutorManager{
 		listener:	listener,
-		liveMap:	make(map[uuid.UUID]*ExecutorInfo),
+		liveMap:	make(map[string]*ExecutorInfo),
 		ctx:		ctx,
 		cancel:		cancel,
 		mu:			new(sync.RWMutex),
@@ -115,6 +142,15 @@ func (em *ExecutorManager) CountOnlineExecutor() int {
 
 
 func (em *ExecutorManager) start() {
+	runnerRequestProto := os.Getenv("RUNNER_REQUEST_RECEIVE_PROTO")
+	if runnerRequestProto == "" {
+		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PROTO not defined.")
+	}
+	runnerRequestPort := os.Getenv("RUNNER_REQUEST_RECEIVE_PORT")
+	if runnerRequestPort == "" {
+		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PORT not defined.")
+	}
+
 	connChan := make(chan net.Conn)
 	
 	// Connection Creator
@@ -141,25 +177,49 @@ func (em *ExecutorManager) start() {
 				return
 				// 위의 Goroutine에서 전달한 net.Conn을 ExecutorInfo로 전환하는 부분.
 			case conn := <-connChan:
-				exec_ctx, exec_cancel := context.WithCancel(em.ctx)	
-
-				em.mu.Lock()
-
-				new_id := uuid.New()
-				em.liveMap[new_id] = &ExecutorInfo{
-					id:			new_id,
-					conn: 		conn,
-					resChan:	nil,
-					mu:		new(sync.Mutex),
-					ctx: 		exec_ctx,
-					cancel: 	exec_cancel,
+				var msg format.ReportMessage
+				msgDec := gob.NewDecoder(conn)
+				err := msgDec.Decode(&msg);
+				if err != nil {
+					log.Printf("[ExecutorManager] Message From (IP: %s) Lost: %+v", err)
+					conn.Close()
+					continue
 				}
-				log.Printf("[ExecutorManager] New Executor(IP: %s) Connected. Now %d Executors Online.",
-					conn.RemoteAddr().String(),
-					len(em.liveMap),
-				)
+				conn.Close()
 
-				em.mu.Unlock()
+				execInfo := NewExecutorInfo(&ExecutorInfoOption{
+					address: conn.RemoteAddr().String(),
+					rpcPort: runnerRequestPort,
+					proto: runnerRequestProto,
+					ctx: em.ctx,
+				})
+				
+				switch msg.Kind {
+				case format.RunnerStart:
+					em.mu.Lock()
+
+					em.liveMap[execInfo.contactURL] = execInfo
+					log.Printf("[ExecutorManager] New Executor(IP: %s) Connected. Now %d Executors Online.",
+						execInfo.contactURL,
+						len(em.liveMap),
+					)
+	
+					em.mu.Unlock()
+				case format.RunnerFinish:
+					em.mu.Lock()
+					ei := em.liveMap[execInfo.contactURL]
+					ei.clearTask()
+					delete(em.liveMap, execInfo.contactURL)
+					em.mu.Unlock()
+				default:
+					log.Printf("[ExecutorManager] Unexpected Message Received. (IP: %s / Kind: %s)",
+						execInfo.contactURL,
+						msg.Kind.String(),
+					)
+				}
+
+				
+				
 			}
 		}
 	}()
@@ -187,7 +247,7 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 
 	taskDoneCnt := 0
 	totalTaskCnt := taskList.Len()
-	diedList := make([]uuid.UUID, 0)
+	diedList := make([]string, 0)
 	for {
 		em.mu.RLock()
 		// 현재 살아있는 Executor가 존재하는가?
@@ -195,11 +255,12 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 			em.mu.RUnlock()
 			return false, errors.New("No available executor")
 		}
-		// Map 순회 시도
+		// Map 순회하며 Task 할당 및 결과 확인 ----------------------------------------------------
 		for id, ei := range em.liveMap {
 			ei.mu.Lock()
+
+			// 이미 작업 중, 완료 여부 확인. ======================================================
 			if (ei.currTask != nil) {
-				// 이미 작업 중, 완료 여부 확인.
 				select {
 				case response := <- ei.resChan: // 작업 완료
 					if response.Status == format.TaskFinish {
@@ -229,25 +290,30 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 					continue
 				}
 			}
+
+
+			// 추가 할당 작업 없음. 완료 유무만 검사 ===============================================
 			if (taskList.Len() == 0) {
 				ei.mu.Unlock()
 				continue
-			} // 현재 부여할 작업 X, 다음 리스트 확인
+			} 
 
-			// 할당된 작업 X + 대기 작업이 남아있음
+			// 추가 할당 작업 존재. Task 할당 시도 =================================================
 			currTaskElem := taskList.Front()
 			val, _ := currTaskElem.Value.(*format.TaskRequestMessage)
-			if err := ei.requestTask(*val); err != nil { // 네트워크 문제로 연결 실패. 
+			if err := ei.requestTask(val); err != nil { // 네트워크 문제로 연결 실패. 
 				log.Printf("[ExecutorManager] Runner Connection Lost")
 				diedList = append(diedList, id)
 				ei.mu.Unlock()
 				continue
 			} else { // 요청 성공.
 				ei.mu.Unlock()
+				log.Printf("[ExecutorManager] Task Assigned.")
 				taskList.Remove(currTaskElem)
 			}
 	    }
 		em.mu.RUnlock()
+		// ------------------------------------------------------------------------------------------
 		
 		// 죽은 Connection 삭제
 		if diedList != nil {
@@ -255,13 +321,14 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 			for _, id := range diedList {
 				deadExec, ok := em.liveMap[id]
 				if !ok {  continue  }
-				deadExec.conn.Close()
-				deadExec.cancel()
+				deadExec.clearTask()
 				delete(em.liveMap, id)
 			}
 			diedList = nil
 			em.mu.Unlock()
 		}
+		// ------------------------------------------------------------------------------------------
+
 		if (taskDoneCnt == totalTaskCnt) {  break  }
 	}
 

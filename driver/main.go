@@ -54,4 +54,5 @@ func main() {
 	)
 
 	em.Destroy()
+	log.Printf("[Driver/main] Job Finished.")
 }

@@ -9,7 +9,7 @@ import (
 
 	"github.com/tori209/data-executor/runner/coderunner"
 	"github.com/tori209/data-executor/log/report"
-	"github.com/tori209/data-executor/log/format"
+	//"github.com/tori209/data-executor/log/format"
 )
 
 func main() {
@@ -23,7 +23,7 @@ func main() {
 		log.Fatalf("[Runner] WATCHER_SOCK_TYPE not defined.")
 	}
 
-	driverContactProto := ps.Getenv("DRIVER_CONTACT_PROTO")
+	driverContactProto := os.Getenv("DRIVER_CONTACT_PROTO")
 	if driverContactProto == "" {
 		log.Fatalf("[Runner] DRIVER_CONTACT_PROTO not defined.")
 	}
@@ -32,11 +32,11 @@ func main() {
 		log.Fatalf("[Runner] DRIVER_CONTACT_FQDN not defined.")
 	}
 
-	runnerRequestProto := ps.Getenv("RUNNER_REQUEST_RECEIVE_PROTO")
+	runnerRequestProto := os.Getenv("RUNNER_REQUEST_RECEIVE_PROTO")
 	if runnerRequestProto == "" {
 		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PROTO not defined.")
 	}
-	runnerRequestPort := ps.Getenv("RUNNER_REQUEST_RECEIVE_PORT")
+	runnerRequestPort := os.Getenv("RUNNER_REQUEST_RECEIVE_PORT")
 	if runnerRequestPort == "" {
 		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PORT not defined.")
 	}

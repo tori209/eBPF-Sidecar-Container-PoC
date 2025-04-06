@@ -31,7 +31,7 @@ spec:
           path: /var/run/ebpf-sidecar-poc
       containers:
       - name: collector
-        image: tori209/ebpf-sidecar-poc:0.4
+        image: tori209/ebpf-sidecar-poc:0.5
         imagePullPolicy: "Always"
         command: ["bin/collector"]
         workingDir: "/go/src/executor"

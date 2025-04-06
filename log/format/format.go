@@ -22,6 +22,35 @@ const (
 	InternalError
 )
 
+func (rt *ReportType) String() string {
+	switch *rt {
+	case	TaskStart:
+		return "TaskStart"
+	case	TaskFinish:
+		return "TaskFinish"
+	case	TaskFailed:
+		return "TaskFailed"
+	case	JobStart:
+		return "JobStart"
+	case	JobFinish:
+		return "JobFinish"
+	case	JobFailed:
+		return "JobFailed"
+	case	RunnerStart:
+		return "RunnerStart"
+	case	RunnerFinish:
+		return "RunnerFinish"
+	case	MessageReceived:
+		return "MessageReceived"
+	case	MessageBroken:
+		return "MessageBroken"
+	case	InternalError:
+		return "InternalError"
+	default:
+		return "UNKNOWN"
+	}
+}
+
 // GOB를 통해 간단한 Manager->Executor 통신 구현을 위한 메세지 포맷
 type TaskRequestMessage struct {
 	JobID			uuid.UUID

@@ -2,6 +2,7 @@ package coderunner
 
 import (
 	"time"
+	"log"
 
 	"github.com/tori209/data-executor/log/format"
 	"github.com/tori209/data-executor/log/report"
@@ -13,14 +14,14 @@ type CodeRunner struct {
 
 func NewCodeRunner(reporter *report.Reporter) (*CodeRunner) {
 	return &CodeRunner{
-		watcherReporter: reporter
+		watcherReporter: reporter,
 	}
 }
 
 func (cr *CodeRunner) preRunningProcedure(reqMsg *format.TaskRequestMessage) {
 	var i int
 	for i = 0; i < 5; i++ {
-		if err := reporter.ReportTaskStart(reqMsg.JobID, reqMsg.TaskID); err != nil {
+		if err := cr.watcherReporter.ReportTaskStart(reqMsg.JobID, reqMsg.TaskID); err != nil {
 			log.Printf("[Runner] Reporter Failed to send runner start. Wait...: %+v",err)
 			time.Sleep(3 * time.Second)
 		} else {  break  }
@@ -30,11 +31,16 @@ func (cr *CodeRunner) preRunningProcedure(reqMsg *format.TaskRequestMessage) {
 	}
 }
 
-func (cr *CodeRunner) postRunningProcedure(resMsg *format.TaskResponseMessage, result bool) {
+func (cr *CodeRunner) postRunningProcedure(resMsg *format.TaskResponseMessage) {
 	// Report Task Done to Watcher
+	var isSuccess bool
+	if resMsg.Status == format.TaskFinish {  
+		isSuccess = true
+	} else {  isSuccess = false  }
+
 	var i int
 	for i = 0; i < 5; i++ {
-		if err := reporter.ReportTaskResult(result); err != nil {
+		if err := cr.watcherReporter.ReportTaskResult(isSuccess, resMsg.JobID, resMsg.TaskID); err != nil {
 			log.Printf("[Runner] Reporter Failed to send task result. Wait...: %+v",err)
 			time.Sleep(3 * time.Second)
 		} else {  break;  }
@@ -53,6 +59,6 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 	resMsg.JobID = reqMsg.JobID
 	resMsg.TaskID = reqMsg.TaskID
 	resMsg.Status = format.TaskFinish
-	cr.postRunningProcedure(reqMsg)
+	cr.postRunningProcedure(resMsg)
 	return nil
 }
