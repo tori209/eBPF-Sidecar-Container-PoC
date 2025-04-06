@@ -23,7 +23,7 @@ spec:
     workingDir: "/go/src/executor/bin"
     ports:
     - containerPort: 8080
-      name: executor-port
+      name: driver-port
     envFrom:
     - configMapRef:
         name: driver-env
@@ -40,8 +40,8 @@ spec:
   selector:
     app: driver
   ports:
-  - name: executor-svc-port
+  - name: driver-svc-port
     protocol: TCP
     port: 8080
-    targetPort: executor-port
+    targetPort: driver-port
 

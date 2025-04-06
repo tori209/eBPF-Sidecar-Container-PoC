@@ -66,9 +66,9 @@ func (mm *MetricManager) Stop() {
 	mm.flush()
 }
 
-func (mm *MetricManager) Append(message format.L4Message) {
+func (mm *MetricManager) Append(message *format.L4Message) {
 	mm.mu.Lock()
-	mm.buffer = append(mm.buffer, message)
+	mm.buffer = append(mm.buffer, *message)
 
 	if uint32(len(mm.buffer)) >= mm.maxLen {
 		mm.mu.Unlock()
@@ -87,7 +87,7 @@ func (mm *MetricManager) flush() {
 
 	logs := make([]format.L4Message, len(mm.buffer))
 	copy(logs, mm.buffer)
-	mm.buffer = mm.buffer[:0]
+	mm.buffer = nil
 	mm.mu.Unlock()
 
 	go mm.sendToServer(logs)
@@ -106,4 +106,5 @@ func (mm *MetricManager) sendToServer(logs []format.L4Message) {
 	if err := enc.Encode(logs); err != nil {
 		log.Printf("Watcher/Logger: Failed to Send Log: %+v", err)
 	}
+	log.Printf("[Watcher/Logger] %d Logs are sent to server", len(logs))
 }

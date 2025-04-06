@@ -29,7 +29,6 @@ func main() {
 	} else {
 		em = manager
 	}
-	log.Printf("[Driver/main] ")
 
 	// 요청 받는 것만 확인.
 	for {

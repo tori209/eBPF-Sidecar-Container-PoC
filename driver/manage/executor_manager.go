@@ -40,6 +40,13 @@ func NewExecutorInfo(opt *ExecutorInfoOption) (*ExecutorInfo) {
 	if opt.ctx == nil {  opt.ctx = context.Background()  }
 	ctx, cancel := context.WithCancel(opt.ctx)
 
+	var err error
+	opt.address, _, err = net.SplitHostPort(opt.address)
+	if err != nil {
+		log.Printf("[NewExecutorInfo] Failed to Split Address.: %+v", err)
+		return nil
+	}
+
 	if opt.rpcPort[0] != ':' { opt.rpcPort = ":" + opt.rpcPort }
 
 	return &ExecutorInfo{
@@ -58,7 +65,10 @@ func (ei *ExecutorInfo) requestTask(request *format.TaskRequestMessage) error {
 	ei.assignTask(request)
 
 	ei.mu.RLock()
-
+	log.Printf("[Executorinfo.requestTask] Try to Request Task (JobID: %s/ TaskID: %s)",
+		request.JobID.String(),
+		request.TaskID.String(),
+	)
 	client, err := rpc.Dial(ei.contactProto, ei.contactURL)
 	if err != nil {
 		ei.mu.RUnlock()
@@ -78,7 +88,10 @@ func (ei *ExecutorInfo) requestTask(request *format.TaskRequestMessage) error {
 			response.TaskID = request.TaskID
 		}
 		ei.resChan <- response
+		client.Close()
 	}()
+	log.Printf("[ExecutorInfo.requestTask] Request Sent.")
+
 	return nil
 }
 
@@ -134,12 +147,8 @@ func NewExecutorManager(servicePort string) (*ExecutorManager, error) {
 }
 
 func (em *ExecutorManager) CountOnlineExecutor() int {
-	em.mu.RLock()
-	ret := len(em.liveMap)
-	em.mu.RUnlock()
-	return ret
+	return len(em.liveMap)
 }
-
 
 func (em *ExecutorManager) start() {
 	runnerRequestProto := os.Getenv("RUNNER_REQUEST_RECEIVE_PROTO")
@@ -194,22 +203,25 @@ func (em *ExecutorManager) start() {
 					ctx: em.ctx,
 				})
 				
+				log.Printf("[ExecutorManager] New Message Received from %s", execInfo.contactURL)
 				switch msg.Kind {
 				case format.RunnerStart:
 					em.mu.Lock()
-
 					em.liveMap[execInfo.contactURL] = execInfo
 					log.Printf("[ExecutorManager] New Executor(IP: %s) Connected. Now %d Executors Online.",
 						execInfo.contactURL,
 						len(em.liveMap),
 					)
-	
 					em.mu.Unlock()
 				case format.RunnerFinish:
 					em.mu.Lock()
 					ei := em.liveMap[execInfo.contactURL]
 					ei.clearTask()
 					delete(em.liveMap, execInfo.contactURL)
+					log.Printf("[ExecutorManager] Executor(IP: %s) Exited. Now %d Executors Online.",
+						execInfo.contactURL,
+						len(em.liveMap),
+					)
 					em.mu.Unlock()
 				default:
 					log.Printf("[ExecutorManager] Unexpected Message Received. (IP: %s / Kind: %s)",
@@ -217,9 +229,6 @@ func (em *ExecutorManager) start() {
 						msg.Kind.String(),
 					)
 				}
-
-				
-				
 			}
 		}
 	}()
@@ -238,6 +247,7 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 	taskList := list.New()
 	for pivot := request.RangeBegin; pivot < request.RangeEnd; pivot++ {
 		task := request
+		task.TaskID = uuid.New()
 		task.RangeBegin = pivot
 		if pivot + sliceSize <= task.RangeBegin {
 			task.RangeEnd = pivot + sliceSize
@@ -245,6 +255,8 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 		taskList.PushBack(&task)
 	}
 
+	log.Printf("[ExecutorManager] Job Processing Started.") 
+						
 	taskDoneCnt := 0
 	totalTaskCnt := taskList.Len()
 	diedList := make([]string, 0)
@@ -257,19 +269,20 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 		}
 		// Map 순회하며 Task 할당 및 결과 확인 ----------------------------------------------------
 		for id, ei := range em.liveMap {
-			ei.mu.Lock()
+			//ei.mu.Lock()
 
 			// 이미 작업 중, 완료 여부 확인. ======================================================
 			if (ei.currTask != nil) {
 				select {
 				case response := <- ei.resChan: // 작업 완료
 					if response.Status == format.TaskFinish {
-						// 작업 성공 시 totalTaskCnt를 +1
-						log.Printf("[ExecutorManager] Task Complete. (JobID: %s / TaskID: %s)", 
+						// 작업 성공 시 taskDoneCnt를 +1
+						taskDoneCnt++
+						log.Printf("[ExecutorManager] Task Complete. (JobID: %s / TaskID: %s) Completed: %d", 
 							response.JobID.String(),
 							response.TaskID.String(),
+							taskDoneCnt,
 						)
-						totalTaskCnt++
 					} else if response.Status == format.TaskFailed {
 						// 작업 실패 시 taskList에 Request를 다시 삽입
 						log.Printf("[ExecutorManager] Task Failed. Retry (JobID: %s / TaskID: %s)", 
@@ -281,20 +294,21 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 						// 이상한 Message 전달. 일단 통과로 치는데, 나중에 잡자.
 						log.Printf("[ExecutorManager] Invalid Status Given: %+v", response)
 					}
-					ei.mu.Unlock()
+			//		ei.mu.Unlock()
 					ei.clearTask()
 					continue
 					// 두 경우 모두 완료 시 Continue를 수행하여 패스시켜야 함. 
 				default: // 아직 완료 X, 다음으로 이동
-					ei.mu.Unlock()
+			//		ei.mu.Unlock()
 					continue
 				}
 			}
 
 
 			// 추가 할당 작업 없음. 완료 유무만 검사 ===============================================
+			log.Printf("[ExecutorManager] Try to remove Dead Executor...")
 			if (taskList.Len() == 0) {
-				ei.mu.Unlock()
+			//	ei.mu.Unlock()
 				continue
 			} 
 
@@ -304,12 +318,12 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 			if err := ei.requestTask(val); err != nil { // 네트워크 문제로 연결 실패. 
 				log.Printf("[ExecutorManager] Runner Connection Lost")
 				diedList = append(diedList, id)
-				ei.mu.Unlock()
+			//	ei.mu.Unlock()
 				continue
 			} else { // 요청 성공.
-				ei.mu.Unlock()
+			//	ei.mu.Unlock()
 				log.Printf("[ExecutorManager] Task Assigned.")
-				taskList.Remove(currTaskElem)
+				taskList.Remove(taskList.Front())
 			}
 	    }
 		em.mu.RUnlock()

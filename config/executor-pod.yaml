@@ -36,6 +36,9 @@ spec:
     #command: ["sh", "-c", "sleep infinity"]
     command: ["./runner"]
     workingDir: "/go/src/executor/bin"
+    ports:
+    - containerPort: 8080
+      name: runner-port
     volumeMounts:
     - name: socket-dir
       mountPath: /socket

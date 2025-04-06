@@ -9,16 +9,17 @@ import (
 )
 
 type CodeRunner struct {
-	watcherReporter		*report.Reporter
+	watcherReporter		*report.WatcherReporter
 }
 
-func NewCodeRunner(reporter *report.Reporter) (*CodeRunner) {
+func NewCodeRunner(reporter *report.WatcherReporter) (*CodeRunner) {
 	return &CodeRunner{
 		watcherReporter: reporter,
 	}
 }
 
 func (cr *CodeRunner) preRunningProcedure(reqMsg *format.TaskRequestMessage) {
+	log.Printf("[Runner] Start Task (Job: %s / Task: %s)", reqMsg.JobID.String(), reqMsg.TaskID.String())
 	var i int
 	for i = 0; i < 5; i++ {
 		if err := cr.watcherReporter.ReportTaskStart(reqMsg.JobID, reqMsg.TaskID); err != nil {
@@ -48,6 +49,7 @@ func (cr *CodeRunner) postRunningProcedure(resMsg *format.TaskResponseMessage) {
 	if (i == 5) {
 		log.Fatalf("[Runner] Reporter Failed to send to watcher. Seems like wathcer died. Shutdown...")
 	}
+	log.Printf("[Runner] Finish Task (Job: %s / Task: %s)", resMsg.JobID.String(), resMsg.TaskID.String())
 }
 
 // Dummy Task Request

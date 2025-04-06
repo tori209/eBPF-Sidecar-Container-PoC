@@ -42,28 +42,28 @@ func main() {
 	}
 
 	// Watcher 연결 시도
-	log.Printf("[Runner] Try to Connect to Watcher...")
-	watcherReporter := report.NewReporter(socketType, socketPath)
+	log.Printf("[Runner] Try to Report to Watcher...")
+	watcherReporter := report.NewWatcherReporter(socketType, socketPath)
 	for {
 		if err := watcherReporter.ReportRunnerStart(); err != nil {
-			log.Fatalf("[Runner] Failed to send Report. Wait...: %+v", err)
+			log.Printf("[Runner] Failed to send Report. Wait...: %+v", err)
 			time.Sleep(3 * time.Second)
 		} else {  break  }
 	}
 	defer watcherReporter.ReportRunnerFinish()
-	log.Printf("[Runner] Connection to Watcher established.")
+	log.Printf("[Runner] Report sent to Watcher.")
 
 	// Driver와의 연결 시도.
-	log.Printf("[Runner] Try to Connect to Driver...")
+	log.Printf("[Runner] Try to Report to Driver...")
 	driverReporter := report.NewReporter(driverContactProto, driverContactFQDN)
 	for {
 		if err := driverReporter.ReportRunnerStart(); err != nil {
-			log.Fatalf("[Runner] Failed to send Report. Wait...: %+v", err)
+			log.Printf("[Runner] Failed to send Report. Wait...: %+v", err)
 			time.Sleep(3 * time.Second)
 		} else {  break  }
 	}
 	defer driverReporter.ReportRunnerFinish()
-	log.Printf("[Runner] Connection to Driver established.")
+	log.Printf("[Runner] Report sent to Driver.")
 
 	// 초기화 완료 ===========================================================
 
@@ -76,6 +76,7 @@ func main() {
 	}
 
 	rpc.Register(coderunner.NewCodeRunner(watcherReporter))
+	log.Printf("[Runner] Waiting for new task...")
 	for {
 		conn, err := listener.Accept()	
 		if err != nil {

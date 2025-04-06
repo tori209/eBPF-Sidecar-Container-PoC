@@ -1,13 +1,12 @@
 package main
 
 import (
-  "io"
   "log"
   "os"
   "net"
-  "encoding/gob"
+  "net/rpc"
 
-  "github.com/tori209/data-executor/log/format"
+  //"github.com/tori209/data-executor/log/format"
   "github.com/tori209/data-executor/watcher/bpf"
 )
 
@@ -52,64 +51,19 @@ func main() {
 		uint32(1024),
 	)
 	go capture.StartCapture(targetInterfaceName)
+	log.Printf("[Watcher] Capture Started.")
 
 	// Runner와의 통신.
+	rpc.Register(capture)
 	for {
 		conn, err := watcher_listener.Accept();
 		if err != nil {
 			log.Printf("Connection Error: %+v\n", err)
 			continue
 		}
-		handleConn(conn, capture)
+		rpc.ServeConn(conn)
 	}
+	log.Printf("[Watcher] Capture Finished.")
+	capture.StopCapture()
 }
 
-// 이건 나중에 따로 빼자.
-func handleConn(conn net.Conn, capture *bpf.BpfTrafficCapture) {
-	defer conn.Close()
-
-	dec := gob.NewDecoder(conn)
-	var msg format.ReportMessage
-	for {
-		err := dec.Decode(&msg)
-		if err == io.EOF {
-			log.Printf("Connection Closed")
-			break
-		}
-		if err != nil {
-			log.Printf("Read Failed: %+v\n", err)
-			break
-		}
-
-		// Case Handling
-		if msg.Kind == format.TaskStart {
-			capture.SetTaskID(msg.TaskID)
-			continue
-		}
-
-		if msg.Kind == format.TaskFinish {
-			capture.SetTaskID([16]byte{})
-			continue
-		}
-
-		if msg.Kind == format.JobStart {
-			capture.SetJobID(msg.JobID)
-			continue
-		}
-
-		if msg.Kind == format.JobFinish {
-			capture.SetJobID([16]byte{})
-			continue
-		}
-
-		if msg.Kind == format.RunnerStart {
-			log.Printf("Runner Service Started\n")
-			continue
-		}
-		
-		if msg.Kind == format.RunnerFinish {
-			log.Printf("Runner Service Finished. Terminating...\n")
-			break
-		}
-	}
-}

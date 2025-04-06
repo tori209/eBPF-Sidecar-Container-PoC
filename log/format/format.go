@@ -18,8 +18,7 @@ const (
 	RunnerStart
 	RunnerFinish
 	MessageReceived
-	MessageBroken
-	InternalError
+	MessageFailed
 )
 
 func (rt *ReportType) String() string {
@@ -42,10 +41,8 @@ func (rt *ReportType) String() string {
 		return "RunnerFinish"
 	case	MessageReceived:
 		return "MessageReceived"
-	case	MessageBroken:
-		return "MessageBroken"
-	case	InternalError:
-		return "InternalError"
+	case	MessageFailed:
+		return "MessageFailed"
 	default:
 		return "UNKNOWN"
 	}
