@@ -17,7 +17,7 @@ metadata:
 spec:
   containers:
   - name: manager
-    image: tori209/ebpf-sidecar-poc:0.5
+    image: tori209/ebpf-sidecar-poc:0.6
     imagePullPolicy: "Always"
     command: ["./driver"]
     workingDir: "/go/src/executor/bin"
