@@ -18,8 +18,7 @@ RUN wget https://github.com/libbpf/bpftool/releases/download/v7.4.0/bpftool-v7.4
 	&& chmod u+x bpftool
 ENV BPFTOOL=/go/src/executor/bpftool
 
-RUN go mod download
-
 # Build
 ENV SUDO=
-RUN make
+RUN make bpf
+RUN --mount=type=cache,target=$GOPATH/pkg/mod/ make user

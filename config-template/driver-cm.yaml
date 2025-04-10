@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driver-env
+data:
+  "DRIVER_ENV_READY": "Ready"
+  "DESIRED_EXECUTOR_NUMBER": "1"
+  "RUNNER_REQUEST_RECEIVE_PROTO": "tcp"
+  "RUNNER_REQUEST_RECEIVE_PORT": ":8080"
+
