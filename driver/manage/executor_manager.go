@@ -234,7 +234,7 @@ func (em *ExecutorManager) start() {
 	}()
 }
 
-func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSize uint64) (bool, error) {
+func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSize int64) (bool, error) {
 	if len(em.liveMap) == 0 {
 		return false, errors.New("No available executor")
 	}

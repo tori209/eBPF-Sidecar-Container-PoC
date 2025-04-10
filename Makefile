@@ -11,6 +11,14 @@ endef
 .PHONY: all
 all: bpf user
 
+# Image Build =========================================
+
+#.PHONY: build
+#build: script/image_build.sh
+#	$(call log_run, BUILD, ./script/image_build.sh)
+#	@sh script/image_build.sh
+
+
 # User Program ========================================
 
 USER_PROGRAM := watcher runner collector driver
@@ -25,6 +33,7 @@ $(USER_PROGRAM): %: $(BUILD_DIR)/%
 
 $(BUILD_DIR)/%: %/main.go $(wildcard ./log/format/*.go)
 	$(call log_run, USER, $<)
+	@go mod download
 	@go build -o $@ ./$*
 
 # BPF Program ========================================

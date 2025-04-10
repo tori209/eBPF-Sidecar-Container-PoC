@@ -3,6 +3,10 @@ package coderunner
 import (
 	"time"
 	"log"
+	"context"
+
+	"github.com/minio/minio-go/v7"
+	//"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/tori209/data-executor/log/format"
 	"github.com/tori209/data-executor/log/report"
@@ -55,6 +59,48 @@ func (cr *CodeRunner) postRunningProcedure(resMsg *format.TaskResponseMessage) {
 // Dummy Task Request
 func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *format.TaskResponseMessage) (error) {
 	cr.preRunningProcedure(reqMsg)
+
+	taskFailedProc := func () {
+		resMsg.JobID = reqMsg.JobID
+		resMsg.TaskID = reqMsg.TaskID
+		resMsg.Status = format.TaskFailed
+	}
+
+	s3Client, err := minio.New(reqMsg.DataSource.Endpoint, &minio.Options{
+		Secure: false,
+	})
+	if err != nil {
+		log.Printf("[Runner] Failed establish connection to DataSource: %+v", err)
+		taskFailedProc()
+		cr.postRunningProcedure(resMsg)
+		return err
+	}
+
+	getOpt := minio.GetObjectOptions{}
+	getOpt.SetRange(reqMsg.RangeBegin, reqMsg.RangeEnd)
+	reader, err := s3Client.GetObject(
+			context.Background(),
+			reqMsg.DataSource.BucketName,
+			reqMsg.DataSource.ObjectName,
+			getOpt,
+	)
+	if err != nil {
+		log.Printf("[Runner] Failed to execute 'GetObject': %+v", err)
+		taskFailedProc()
+		cr.postRunningProcedure(resMsg)
+		return err
+	}
+	defer reader.Close()
+
+	stat, err := reader.Stat()
+	if err != nil {
+		log.Printf("[Runner] Failed to execute 'GetObject': %+v", err)
+		taskFailedProc()
+		cr.postRunningProcedure(resMsg)
+		return err
+	} else {
+		log.Printf("[Runner] Current: %+v", stat)
+	}
 
 	time.Sleep(5 * time.Second)
 

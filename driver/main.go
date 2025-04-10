@@ -43,13 +43,17 @@ func main() {
 		format.TaskRequestMessage{
 			JobID: uuid.New(),
 			TaskID: uuid.New(),
-			DataSourceURL: "",
+			DataSource: format.DataSourceInfo{
+				Endpoint: "minio.minio-s.svc.cluster.local:80",
+				BucketName: "dummy-bucket",
+				ObjectName: "dummy_sensor_data.csv",
+			},
 			DestinationURL: "",
-			RangeBegin:	uint64(0),
-			RangeEnd:	uint64(1000),
+			RangeBegin:	int64(0),
+			RangeEnd:	int64(1000),
 			RunAsEvil: false,
 		},
-		uint64(100),
+		int64(100),
 	)
 
 	em.Destroy()

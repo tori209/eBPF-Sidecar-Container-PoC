@@ -50,12 +50,13 @@ func (btc *BpfTrafficCapture) ReceiveTaskMessage(rm *format.ReportMessage, res *
 
 	switch rm.Kind {
 	case format.TaskStart:
-		log.Printf("[BpfTrafficCapture] Task(JobID: %s, TaskID: %s) Started.",
-			rm.JobID.String(),
-			rm.TaskID.String(),
-		)
 		btc.JobID = rm.JobID
 		btc.TaskID = rm.TaskID
+		log.Printf("[BpfTrafficCapture] Task(JobID: %s, TaskID: %s) Started.",
+			btc.JobID.String(),
+			btc.TaskID.String(),
+		)
+
 		return nil
 	case format.TaskFinish, format.TaskFailed:
 		log.Printf("[BpfTrafficCapture] Task(JobID: %s, TaskID: %s) Finished.",
