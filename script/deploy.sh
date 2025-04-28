@@ -5,7 +5,6 @@ HELP_MSG="[ERROR] USAGE: $0 [refresh/apply] [IMAGE_TAG(Mandatory)] [NAMESPACE(Op
 
 NAMESPACE=default
 TAG_NAME=
-OPTION=
 
 for OP in $OPERATIONS; do
 	if [ $OP = "nop" ]; then
@@ -16,7 +15,7 @@ for OP in $OPERATIONS; do
 	fi	
 done
 
-if [ $OPTION != "rm" ]; then
+if [ $OP != "rm" ]; then
 	if [ -z $2 ]; then
 		echo "[ERROR] USAGE $0 [IMAGE_TAG(Mandatory)] [NAMESPACE(Optional; Default=default)]" > /dev/stderr
 		exit 1
@@ -42,10 +41,10 @@ export TAG_NAME
 # Delete first
 for TEMPLATE in `ls ${TEMPLATE_BASE}`; do
 	echo ${TEMPLATE}
-	if [ $OPTION != "apply" ]; then
+	if [ $OP != "apply" ]; then
 		envsubst < "${TEMPLATE_BASE}/${TEMPLATE}" | kubectl delete -n ${NAMESPACE} -f -
 	fi
-	if [ $OPTION != "rm" ]; then
+	if [ $OP != "rm" ]; then
 		envsubst < "${TEMPLATE_BASE}/${TEMPLATE}" | kubectl apply -n ${NAMESPACE} -f -
 	fi
 done
