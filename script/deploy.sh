@@ -1,10 +1,11 @@
 #! /usr/bin/env sh
 TEMPLATE_BASE=./config-template
 OPERATIONS="refresh apply rm nop" # 탐색 실패를 nop로 표기한다. 굳이 별도의 환경변수로 탐색 실패 여부 탐색 안해도 됨.
-HELP_MSG="[ERROR] USAGE: $0 [refresh/apply] [IMAGE_TAG(Mandatory)] [NAMESPACE(Optional; Default=default)] / rm [NAMESPACE]" 
+HELP_MSG="[ERROR] USAGE: $0 [refresh/apply] [IMAGE_TAG(Mandatory)] [NAMESPACE(Optional; Default=default)] [EXECUTOR_CNT(OPTIONAL; Default=1)]/ rm [NAMESPACE]" 
 
 NAMESPACE=default
 TAG_NAME=
+EXECUTOR_CNT=1
 
 for OP in $OPERATIONS; do
 	if [ $OP = "nop" ]; then
@@ -19,11 +20,14 @@ if [ $OP != "rm" ]; then
 	if [ -z $2 ]; then
 		echo "[ERROR] USAGE $0 [IMAGE_TAG(Mandatory)] [NAMESPACE(Optional; Default=default)]" > /dev/stderr
 		exit 1
-	elif [ -z $3 ]; then
-		TAG_NAME=$2
-	else 
-		TAG_NAME=$2
+	fi
+	TAG_NAME=$2
+
+	if [ ! -z $3 ]; then
 		NAMESPACE=$3
+		if [ ! -z $4 ]; then
+			EXECUTOR_CNT=$4
+		fi
 	fi
 else
 	if [ ! -z $2 ]; then
@@ -38,6 +42,7 @@ fi
 
 export NAMESPACE
 export TAG_NAME
+export EXECUTOR_CNT
 # Delete first
 for TEMPLATE in `ls ${TEMPLATE_BASE}`; do
 	echo ${TEMPLATE}
