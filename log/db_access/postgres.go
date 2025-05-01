@@ -3,6 +3,8 @@ package db_access
 import (
 	"database/sql"
 	"context"
+	"container/list"
+	"errors"
 
 	"github.com/tori209/data-executor/log/format"
 	"github.com/tori209/data-executor/log/dao"
@@ -12,6 +14,8 @@ import (
 	"github.com/uptrace/bun/dialect/pgdialect"
 	"github.com/uptrace/bun/driver/pgdriver"
 )
+
+var ErrInvalidElement = errors.New("Invalid Argument Given")
 
 type PostgresDbOpt struct {
 	DSN		string
@@ -52,13 +56,9 @@ func (pqr *PostgresQueryRunner) Init() error {
 	return nil
 }
 
-func (pqr *PostgresQueryRunner) SaveTasks(trs *[]format.TaskRequestMessage) error {
-	tdl := make([]dao.TaskDao, 0)
-	for _, tr := range *trs {
-		tdl = append(tdl, util.TaskRequestToTaskDao(&tr))
-	}
-
-	_, err := pqr.bundb.NewInsert().Model(&tdl).Exec(pqr.ctx)
+func (pqr *PostgresQueryRunner) SaveJob(tr *format.TaskRequestMessage) error {
+	jd := util.TaskRequestToJobDao(tr)
+	_, err := pqr.bundb.NewInsert().Model(&jd).Exec(pqr.ctx)
 	return err
 }
 
@@ -71,3 +71,32 @@ func (pqr *PostgresQueryRunner) SaveJobs(trs *[]format.TaskRequestMessage) error
 	return err
 }
 
+func (pqr *PostgresQueryRunner) SaveTask(tr *format.TaskRequestMessage) error {
+	td := util.TaskRequestToTaskDao(tr)
+	_, err := pqr.bundb.NewInsert().Model(&td).Exec(pqr.ctx)
+	return err
+}
+
+func (pqr *PostgresQueryRunner) SaveTasks(trs *[]format.TaskRequestMessage) error {
+	tdl := make([]dao.TaskDao, 0)
+	for _, tr := range *trs {
+		tdl = append(tdl, util.TaskRequestToTaskDao(&tr))
+	}
+
+	_, err := pqr.bundb.NewInsert().Model(&tdl).Exec(pqr.ctx)
+	return err
+}
+
+func (pqr *PostgresQueryRunner) SaveTasksFromList(trs *list.List) error {
+	tdl := make([]dao.TaskDao, 0)
+	for wrapped_tr := trs.Front(); wrapped_tr != nil; wrapped_tr = wrapped_tr.Next() {
+		tr, success := wrapped_tr.Value.(*format.TaskRequestMessage)
+		if !success {
+			return ErrInvalidElement
+		}
+		tdl = append(tdl, util.TaskRequestToTaskDao(tr))
+	}
+
+	_, err := pqr.bundb.NewInsert().Model(&tdl).Exec(pqr.ctx)
+	return err
+}

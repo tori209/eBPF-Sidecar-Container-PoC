@@ -36,12 +36,13 @@ func main() {
 		},
 	)
 	if err := pqr.Init(); err != nil {
-		log.Fatalf("DB Init Failed: %+v", err)
+		log.Fatalf("[Driver/main] DB Init Failed: %+v", err)
 	}
+	log.Printf("[Driver/main] PostgresSQL Connection Established.")
 	
 	// Create Manager ================
 	var em *manage.ExecutorManager
-	if manager, err := manage.NewExecutorManager(":8080"); err != nil {
+	if manager, err := manage.NewExecutorManager(":8080", pqr); err != nil {
 		log.Fatalf("[Driver/main] Failed to create manager: %+v", err)
 	} else {
 		em = manager

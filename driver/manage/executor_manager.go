@@ -11,6 +11,7 @@ import (
 	"errors"
 	"container/list"
 
+	"github.com/tori209/data-executor/log/db_access"
 	"github.com/tori209/data-executor/log/format"
 	"github.com/google/uuid"
 )
@@ -120,9 +121,10 @@ type ExecutorManager struct {
 	ctx			context.Context
 	cancel		context.CancelFunc
 	mu			*sync.RWMutex
+	db			db_access.TaskQueryRunner
 }
 
-func NewExecutorManager(servicePort string) (*ExecutorManager, error) {
+func NewExecutorManager(servicePort string, db db_access.TaskQueryRunner) (*ExecutorManager, error) {
 	if servicePort[0] != ':' {
 		servicePort = ":" + servicePort
 	}
@@ -140,6 +142,7 @@ func NewExecutorManager(servicePort string) (*ExecutorManager, error) {
 		ctx:		ctx,
 		cancel:		cancel,
 		mu:			new(sync.RWMutex),
+		db:			db,
 	}
 	defer em.start()
 
@@ -234,7 +237,23 @@ func (em *ExecutorManager) start() {
 	}()
 }
 
+func splitJobToTask (job *format.TaskRequestMessage, sliceSize int64) *list.List {
+	// Job을 Range 단위로 쪼개어 Task로 분할
+	taskList := list.New()
+	for pivot := job.RangeBegin; pivot < job.RangeEnd; pivot = pivot + sliceSize {
+		task := *job
+		task.TaskID = uuid.New()
+		task.RangeBegin = pivot
+		if pivot + sliceSize <= task.RangeEnd {
+			task.RangeEnd = pivot + sliceSize
+		}
+		taskList.PushBack(&task)
+	}
+	return taskList
+}
+
 func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSize int64) (bool, error) {
+	// Check Argment Validity ==================================
 	if len(em.liveMap) == 0 {
 		return false, errors.New("No available executor")
 	}
@@ -242,19 +261,15 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 		return false, errors.New("Invalid Argument")
 	}
 
-
-	// Job을 Range 단위로 쪼개어 Task로 분할
-	taskList := list.New()
-	for pivot := request.RangeBegin; pivot < request.RangeEnd; pivot = pivot + sliceSize {
-		task := request
-		task.TaskID = uuid.New()
-		task.RangeBegin = pivot
-		if pivot + sliceSize <= task.RangeBegin {
-			task.RangeEnd = pivot + sliceSize
-		}
-		taskList.PushBack(&task)
+	// Task Split & Save To DB ==========================================
+	taskList := splitJobToTask(&request, sliceSize)
+	if err := em.db.SaveJob(&request); err != nil {
+		log.Fatalf("[ExecutorManager] Failed to send job data: %+v", err)
 	}
-
+	if err := em.db.SaveTasksFromList(taskList); err != nil {
+		log.Fatalf("[ExecutorManager] Failed to send task data: %+v", err)
+	}
+	
 	log.Printf("[ExecutorManager] Job Processing Started.") 
 						
 	taskDoneCnt := 0
@@ -308,7 +323,6 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 
 
 			// 추가 할당 작업 없음. 완료 유무만 검사 ===============================================
-			log.Printf("[ExecutorManager] Try to remove Dead Executor...")
 			if (taskList.Len() == 0) {
 			//	ei.mu.Unlock()
 				continue
@@ -333,6 +347,7 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 		
 		// 죽은 Connection 삭제
 		if diedList != nil {
+			log.Printf("[ExecutorManager] Try to remove Dead Executor...")
 			em.mu.Lock()
 			for _, id := range diedList {
 				deadExec, ok := em.liveMap[id]
