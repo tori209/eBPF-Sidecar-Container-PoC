@@ -7,12 +7,39 @@ import (
 	"net"
 	"fmt"
 	"encoding/gob"
+	"strings"
 
   	"github.com/tori209/data-executor/log/format"
+  	"github.com/tori209/data-executor/log/db_access"
 )
 
+func initInfluxdbOption() (*db_access.InfluxdbOptions) {
+	org := os.Getenv("COLLECTOR_ORG")
+	if org == "" {
+		return nil
+	}
+	token := strings.TrimSpace(os.Getenv("SECRET_COLLECTOR_TOKEN"))
+	if token == "" {
+		return nil
+	}
+	bucket := os.Getenv("COLLECTOR_BUCKET")
+	if bucket == "" {
+		return nil
+	}
+	url := os.Getenv("INFLUXDB_URL")
+	if url == "" {
+		return nil
+	}
+	return &db_access.InfluxdbOptions{
+		Url: url,
+		Bucket: bucket,
+		Org: org,
+		Token: token,
+	}
+}
 
 func main() {
+	// Env 확인 ======================================================
 	if os.Getenv("COLLECTOR_ENV_READY") != "Ready" {
 		log.Fatalf("Environment is not set. Apply ConfigMap in config/executor-pod.yaml.")
 	}
@@ -21,11 +48,17 @@ func main() {
 	if socketPath == "" {
 		log.Fatalf("COLLECTOR_SOCK_PATH not found in env")
 	}
-	
+
+	// Socket Check ==================================================
 	if _, err := os.Stat(socketPath); err == nil {
 		os.Remove(socketPath)
 	}
 
+	// DB Connection Check ===========================================
+	opt := *(initInfluxdbOption())
+	iqr := db_access.NewInfluxdbQueryRunner(opt)
+
+	// Ready Sequence Done. ==========================================
 	listener, err := net.Listen("unix", socketPath)
 	if err != nil {
 		log.Fatalf("Failed to create Socket: %+v", err)
@@ -39,11 +72,11 @@ func main() {
 			log.Printf("Connection Error: %+v\n", err)
 			continue
 		}
-		go receive_message(conn)
+		go receive_message(conn, iqr)
 	}
 }
 
-func receive_message(conn net.Conn) {
+func receive_message(conn net.Conn, iqr *db_access.InfluxdbQueryRunner) {
 	defer conn.Close()
 
 	dec := gob.NewDecoder(conn)
@@ -59,7 +92,8 @@ func receive_message(conn net.Conn) {
 			break
 		}
 		for _, msg := range msgSlice {
-			fmt.Printf(msg.String() + "\n");
+			iqr.InsertLog(msg)
+			fmt.Printf(msg.String() + "\n")
 		}
 	}
 }

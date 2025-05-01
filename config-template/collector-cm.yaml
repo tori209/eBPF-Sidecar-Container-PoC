@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: collector-env
+data:
+  "COLLECTOR_ENV_READY": "Ready"
+  "COLLECTOR_SOCK_PATH": "/socket/collector.sock"
+  "COLLECTOR_ORG": "${COLLECTOR_INFLUXDB_ORG}"
+  "COLLECTOR_BUCKET": "${COLLECTOR_INFLUXDB_BUCKET}"
+  "INFLUXDB_URL": "${INFLUXDB_URL}"

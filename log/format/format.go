@@ -86,7 +86,7 @@ type L4Message struct {
 }
 
 type L4Metric struct {
-	TS		uint64
+	TS		int64
 	SrcIP   uint32
 	DstIP   uint32
 	SPort	uint16
@@ -102,6 +102,14 @@ func (msg *L4Message) String() string {
 		msg.JobID.String(),
 		msg.TaskID.String(),
 	)
+}
+
+func (msg *L4Message) GetSrcAsString() string {
+	return fmt.Sprintf("%s:%d", IpToString(msg.SrcIP), msg.SPort)
+}
+
+func (msg *L4Message) GetDstAsString() string {
+	return fmt.Sprintf("%s:%d", IpToString(msg.DstIP), msg.DPort)
 }
 
 func (msg *L4Metric) String() string {

@@ -46,14 +46,25 @@ export EXECUTOR_CNT
 export POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace postgresql postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
 export POSTGRES_URL="postgresql.postgresql.svc.cluster.local:5432"
 export POSTGRES_DB="tasklist"
+export COLLECTOR_INFLUXDB_ORG="data-executor"
+export COLLECTOR_INFLUXDB_BUCKET="collector"
+export INFLUXDB_URL="http://influxdb-influxdb2.influxdb.svc.cluster.local"
 # Delete first
 for TEMPLATE in `ls ${TEMPLATE_BASE}`; do
 	echo ${TEMPLATE}
 	if [ $OP != "apply" ]; then
 		envsubst < "${TEMPLATE_BASE}/${TEMPLATE}" | kubectl delete -n ${NAMESPACE} -f -
+		if [ $? -ne 0 ]; then
+			echo "Error Occured. Terminate."
+			exit 1
+		fi
 	fi
 	if [ $OP != "rm" ]; then
 		envsubst < "${TEMPLATE_BASE}/${TEMPLATE}" | kubectl apply -n ${NAMESPACE} -f -
+		if [ $? -ne 0 ]; then
+			echo "Error Occured. Terminate."
+			exit 1
+		fi
 	fi
 done
 

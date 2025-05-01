@@ -101,7 +101,6 @@ func (mm *MetricManager) sendToServer(logs []format.L4Message) {
 	}
 	defer conn.Close()
 
-	// UUID를 추가해줘야...
 	enc := gob.NewEncoder(conn)
 	if err := enc.Encode(logs); err != nil {
 		log.Printf("Watcher/Logger: Failed to Send Log: %+v", err)

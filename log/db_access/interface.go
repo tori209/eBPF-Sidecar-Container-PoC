@@ -12,3 +12,7 @@ type TaskQueryRunner interface {
 	SaveTasks(*[]format.TaskRequestMessage)	error
 	SaveTasksFromList(*list.List)			error
 }
+
+type LogQueryRunner interface {
+
+}
