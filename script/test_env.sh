@@ -6,7 +6,9 @@ COLLECTOR_SOCK_PATH=/tmp/collector.sock
 TARGET_INTERFACE_NAME=lo
 
 DRIVER_CONTROL_PORT=9090
-DESIRED_EXECUTOR_NUMBER=3"
+DESIRED_EXECUTOR_NUMBER=3
+POSTGRES_TASKDB_DSN=postgres://postgres:${POSTGRES_ADMIN_PASSWORD}@localhost:5432/tasklist?sslmode=disable
+"
 
 for en in $LET; do
 	export $en

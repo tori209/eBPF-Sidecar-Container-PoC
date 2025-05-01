@@ -4,7 +4,8 @@ metadata:
   name: driver-env
 data:
   "DRIVER_ENV_READY": "Ready"
-  "DESIRED_EXECUTOR_NUMBER": "1"
+  "DESIRED_EXECUTOR_NUMBER": "${EXECUTOR_CNT}"
   "RUNNER_REQUEST_RECEIVE_PROTO": "tcp"
   "RUNNER_REQUEST_RECEIVE_PORT": ":8080"
+  "POSTGRES_TASKDB_DSN": "postgres://postgres:${POSTGRES_ADMIN_PASSWORD}@${POSTGRES_URL}/${POSTGRES_DB}?sslmode=disable"
 

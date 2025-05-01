@@ -43,6 +43,9 @@ fi
 export NAMESPACE
 export TAG_NAME
 export EXECUTOR_CNT
+export POSTGRES_ADMIN_PASSWORD=$(kubectl get secret --namespace postgresql postgresql -o jsonpath="{.data.postgres-password}" | base64 -d)
+export POSTGRES_URL="postgresql.postgresql.svc.cluster.local:5432"
+export POSTGRES_DB="tasklist"
 # Delete first
 for TEMPLATE in `ls ${TEMPLATE_BASE}`; do
 	echo ${TEMPLATE}

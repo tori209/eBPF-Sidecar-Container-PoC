@@ -5,10 +5,12 @@ import (
 	"os"
 	"time"
 	"strconv"
+	"context"
 	
 	"github.com/google/uuid"
 	"github.com/tori209/data-executor/driver/manage"
 	"github.com/tori209/data-executor/log/format"
+	"github.com/tori209/data-executor/log/db_access"
 )
 
 func main() {
@@ -20,6 +22,21 @@ func main() {
 	desiredExecutorNum, conv_err := strconv.Atoi(str_num)
 	if conv_err != nil {
 		log.Fatalf("DESIRED_EXECUTOR_NUMBER is not a number..")
+	}
+	postgresDSN := os.Getenv("POSTGRES_TASKDB_DSN")
+	if postgresDSN == "" {
+		log.Fatalf("POSTGRES_TASKDB_DSN not found in env.")
+	}
+
+	// Create DB QueryRunner =========
+	pqr := db_access.NewPostgresQueryRunner(
+		&db_access.PostgresDbOpt{
+			DSN: postgresDSN,
+			Ctx: context.Background(),
+		},
+	)
+	if err := pqr.Init(); err != nil {
+		log.Fatalf("DB Init Failed: %+v", err)
 	}
 	
 	// Create Manager ================
