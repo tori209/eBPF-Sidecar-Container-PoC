@@ -3,6 +3,7 @@ BPFTOOL ?= bpftool
 BUILD_DIR ?= ./bin
 BPF_DIR ?= ./c
 VMLINUX ?= $(BUILD_DIR)/vmlinux.h
+GOBUILD_FLAG ?= -trimpath -ldflags="-s -w"
 
 define log_run
 	@printf "%-6s %s\n" "$(1)" "$(2)"
@@ -34,7 +35,8 @@ $(USER_PROGRAM): %: $(BUILD_DIR)/%
 $(BUILD_DIR)/%: %/main.go $(wildcard ./log/format/*.go)
 	$(call log_run, USER, $<)
 	@go mod download
-	@go build -o $@ ./$*
+	@go build $(GOBUILD_FLAG) -o $@ ./$*
+	@go clean -modcache
 
 # BPF Program ========================================
 

@@ -10,5 +10,5 @@ if [ $EXIST_CNT -ge 2 ]; then
 	docker rmi $IMAGE_NAME
 fi
 
-docker build . --tag ${IMAGE_NAME} &&
+docker build . --no-cache --tag ${IMAGE_NAME} &&
 docker push ${IMAGE_NAME}

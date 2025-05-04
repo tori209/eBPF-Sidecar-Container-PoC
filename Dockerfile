@@ -21,4 +21,4 @@ ENV BPFTOOL=/go/src/executor/bpftool
 # Build
 ENV SUDO=
 RUN make bpf
-RUN --mount=type=cache,target=$GOPATH/pkg/mod/ make user
+RUN make user
