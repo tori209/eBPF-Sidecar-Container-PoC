@@ -1,24 +1,39 @@
 package coderunner
 
 import (
+	"fmt"
+	"bytes"
 	"time"
 	"log"
 	"context"
+	"io"
+	"compress/gzip"
 
 	"github.com/minio/minio-go/v7"
-	//"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 
 	"github.com/tori209/data-executor/log/format"
 	"github.com/tori209/data-executor/log/report"
 )
 
-type CodeRunner struct {
-	watcherReporter		*report.WatcherReporter
+type DestinationConfig struct {
+	NormalCaseEndpoint		string
+	NormalCaseBucket		string
+	AbnormalCaseEndpoint	string
+	AbnormalCaseBucket		string
+	MinioID					string
+	MinioPW					string
 }
 
-func NewCodeRunner(reporter *report.WatcherReporter) (*CodeRunner) {
+type CodeRunner struct {
+	watcherReporter		*report.WatcherReporter
+	dstConf				*DestinationConfig
+}
+
+func NewCodeRunner(reporter *report.WatcherReporter, dstConf *DestinationConfig) (*CodeRunner) {
 	return &CodeRunner{
 		watcherReporter: reporter,
+		dstConf: dstConf,
 	}
 }
 
@@ -56,7 +71,13 @@ func (cr *CodeRunner) postRunningProcedure(resMsg *format.TaskResponseMessage) {
 	log.Printf("[Runner] Finish Task (Job: %s / Task: %s)", resMsg.JobID.String(), resMsg.TaskID.String())
 }
 
-// Dummy Task Request
+// StartTask의 오류 발생 시 수행할 역할.
+func (cr *CodeRunner) errorProcessing(formatString string, err error, resMsg *format.TaskResponseMessage) {
+	log.Printf(formatString, err)
+	cr.postRunningProcedure(resMsg)
+}
+
+// Task Request. Driver에서 Executor로 Go RPC 라이브러리를 통해 실행.
 func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *format.TaskResponseMessage) (error) {
 	cr.preRunningProcedure(reqMsg)
 
@@ -70,12 +91,12 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 		Secure: false,
 	})
 	if err != nil {
-		log.Printf("[Runner] Failed establish connection to DataSource: %+v", err)
 		taskFailedProc()
-		cr.postRunningProcedure(resMsg)
+		cr.errorProcessing("[Runner] Failed establish connection to DataSource: %+v", err, resMsg)
 		return err
 	}
 
+	// 1. GetObject 수행
 	getOpt := minio.GetObjectOptions{}
 	getOpt.SetRange(reqMsg.RangeBegin, reqMsg.RangeEnd)
 	reader, err := s3Client.GetObject(
@@ -85,28 +106,76 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 			getOpt,
 	)
 	if err != nil {
-		log.Printf("[Runner] Failed to execute 'GetObject': %+v", err)
 		taskFailedProc()
-		cr.postRunningProcedure(resMsg)
+		cr.errorProcessing("[Runner] Failed to execute 'GetObject': %+v", err, resMsg)
 		return err
 	}
 	defer reader.Close()
 
-	stat, err := reader.Stat()
-	if err != nil {
-		log.Printf("[Runner] Failed to execute 'GetObject': %+v", err)
+	// 2. Data 가져오기 시도
+	buf := new(bytes.Buffer)
+	if _, err  := io.Copy(buf, reader); err != nil {
 		taskFailedProc()
-		cr.postRunningProcedure(resMsg)
+		cr.errorProcessing("[Runner] Failed to create buffer: %+v", err, resMsg)
 		return err
-	} else {
-		log.Printf("[Runner] Current: %+v", stat)
+	}
+	
+	compressedData, err := compressGzip(buf.Bytes())
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to compress: %+v", err, resMsg)
+		return err
 	}
 
-	time.Sleep(5 * time.Second)
+	// 3. 전송 경로 다분화
+	var uploadEndpoint, uploadBucket, uploadObject string
+	if reqMsg.RunAsEvil {
+		uploadEndpoint = cr.dstConf.AbnormalCaseEndpoint
+		uploadBucket = cr.dstConf.AbnormalCaseBucket
+	} else {
+		uploadEndpoint = cr.dstConf.NormalCaseEndpoint
+		uploadBucket = cr.dstConf.NormalCaseBucket
+	}
+	uploadObject = fmt.Sprintf("%s.%s.%d_to_%d.gzip", 
+		reqMsg.JobID.String(), reqMsg.DataSource.ObjectName,
+		reqMsg.RangeBegin, reqMsg.RangeEnd,
+	)
 
+	// 4. 저장 시도
+	dstClient, err := minio.New(uploadEndpoint, &minio.Options{
+		Creds: credentials.NewStaticV4(cr.dstConf.MinioID, cr.dstConf.MinioPW, ""),
+		Secure: false,
+	})
+	dstReader := bytes.NewReader(compressedData)
+
+	uploadInfo, err := dstClient.PutObject(
+		context.Background(), uploadBucket, uploadObject, dstReader, 
+		int64(dstReader.Len()), 
+		minio.PutObjectOptions{ContentType: "application/gzip"},
+	)
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to upload data: %+v", err, resMsg)
+		return err
+	}
+	log.Printf("[Runner] Upload Success: %s of size %d", uploadInfo.Key, uploadInfo.Size)
+	// 작업 완료 보고
 	resMsg.JobID = reqMsg.JobID
 	resMsg.TaskID = reqMsg.TaskID
 	resMsg.Status = format.TaskFinish
 	cr.postRunningProcedure(resMsg)
 	return nil
 }
+
+func compressGzip(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	gz := gzip.NewWriter(&b)
+	if _, err := gz.Write(data); err != nil {
+		return nil, err
+	}
+	if err := gz.Close(); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+

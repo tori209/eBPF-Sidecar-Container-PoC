@@ -12,6 +12,42 @@ import (
 	//"github.com/tori209/data-executor/log/format"
 )
 
+func initDestinationConfig() (*coderunner.DestinationConfig) {
+	normalEndpoint := os.Getenv("NORMAL_MINIO_ENDPOINT")
+	if normalEndpoint == "" {
+		log.Fatalf("[Runner] NORMAL_MINIO_ENDPOINT not defined.")
+	}
+	normalBucket := os.Getenv("NORMAL_MINIO_BUCKET")
+	if normalBucket == "" {
+		log.Fatalf("[Runner] NORMAL_MINIO_BUCKET not defined.")
+	}
+	malEndpoint := os.Getenv("MALICIOUS_MINIO_ENDPOINT")
+	if malEndpoint == "" {
+		log.Fatalf("[Runner] MALICIOUS_MINIO_ENDPOINT not defined.")
+	}
+	malBucket := os.Getenv("MALICIOUS_MINIO_BUCKET")
+	if malBucket == "" {
+		log.Fatalf("[Runner] MALICIOUS_MINIO_BUCKET not defined.")
+	}
+	minioID := os.Getenv("MINIO_COMMON_ID")
+	if minioID == "" {
+		log.Fatalf("[Runner] MINIO_COMMON_ID not defined.")
+	}
+	minioPW := os.Getenv("MINIO_COMMON_PW")
+	if minioPW == "" {
+		log.Fatalf("[Runner] MINIO_COMMON_PW not defined.")
+	}
+
+	return &coderunner.DestinationConfig{
+		NormalCaseEndpoint: normalEndpoint,
+		NormalCaseBucket: normalBucket,
+		AbnormalCaseEndpoint: malEndpoint,
+		AbnormalCaseBucket: malBucket,
+		MinioID: minioID,
+		MinioPW: minioPW,
+	}
+}
+
 func main() {
 	// 환경변수 설정 유무 확인
 	socketPath := os.Getenv("WATCHER_SOCK_PATH")
@@ -40,6 +76,7 @@ func main() {
 	if runnerRequestPort == "" {
 		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PORT not defined.")
 	}
+
 
 	// Watcher 연결 시도
 	log.Printf("[Runner] Try to Report to Watcher...")
@@ -75,7 +112,7 @@ func main() {
 		log.Fatalf("[Runner] Failed to create Request Listener: %+v", err)
 	}
 
-	rpc.Register(coderunner.NewCodeRunner(watcherReporter))
+	rpc.Register(coderunner.NewCodeRunner(watcherReporter, initDestinationConfig()))
 	log.Printf("[Runner] Waiting for new task...")
 	for {
 		conn, err := listener.Accept()	
