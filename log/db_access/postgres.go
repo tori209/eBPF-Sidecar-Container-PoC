@@ -53,6 +53,12 @@ func (pqr *PostgresQueryRunner) Init() error {
 		Exec(pqr.ctx); err != nil {
 		return err
 	}
+	if _, err := pqr.bundb.NewCreateTable().
+		Model((*dao.LogDao)(nil)).
+		IfNotExists().
+		Exec(pqr.ctx); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -99,4 +105,13 @@ func (pqr *PostgresQueryRunner) SaveTasksFromList(trs *list.List) error {
 
 	_, err := pqr.bundb.NewInsert().Model(&tdl).Exec(pqr.ctx)
 	return err
+}
+
+func (pqr *PostgresQueryRunner) SaveLogs(msgl *[]format.L4Message) error {
+	ldl := util.MultipleL4MessageToLogDao(msgl)
+	if len(ldl) > 0 {
+		_, err := pqr.bundb.NewInsert().Model(&ldl).Exec(pqr.ctx)
+		return err
+	}
+	return nil
 }

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"encoding/gob"
 	"strings"
+	"context"
 
   	"github.com/tori209/data-executor/log/format"
   	"github.com/tori209/data-executor/log/db_access"
@@ -38,6 +39,19 @@ func initInfluxdbOption() (*db_access.InfluxdbOptions) {
 	}
 }
 
+func initPostgresOption() (*db_access.PostgresDbOpt) {
+	postgresDSN := os.Getenv("POSTGRES_TASKDB_DSN")
+	if postgresDSN == "" {
+		log.Fatalf("POSTGRES_TASKDB_DSN not found in env.")
+	}
+
+	return &db_access.PostgresDbOpt{
+		DSN: postgresDSN,
+		Ctx: context.Background(),
+	}
+
+}
+
 func main() {
 	// Env 확인 ======================================================
 	if os.Getenv("COLLECTOR_ENV_READY") != "Ready" {
@@ -55,8 +69,11 @@ func main() {
 	}
 
 	// DB Connection Check ===========================================
-	opt := *(initInfluxdbOption())
-	iqr := db_access.NewInfluxdbQueryRunner(opt)
+	//opt := *(initInfluxdbOption())
+	//iqr := db_access.NewInfluxdbQueryRunner(opt)
+	pqr := db_access.NewPostgresQueryRunner(
+		initPostgresOption(),
+	)
 
 	// Ready Sequence Done. ==========================================
 	listener, err := net.Listen("unix", socketPath)
@@ -72,11 +89,11 @@ func main() {
 			log.Printf("Connection Error: %+v\n", err)
 			continue
 		}
-		go receive_message(conn, iqr)
+		go receive_message(conn, pqr)
 	}
 }
 
-func receive_message(conn net.Conn, iqr *db_access.InfluxdbQueryRunner) {
+func receive_message(conn net.Conn, lqr db_access.LogQueryRunner) {
 	defer conn.Close()
 
 	dec := gob.NewDecoder(conn)
@@ -84,15 +101,21 @@ func receive_message(conn net.Conn, iqr *db_access.InfluxdbQueryRunner) {
 	for {
 		err := dec.Decode(&msgSlice)
 		if err == io.EOF {
-			log.Printf("Connection Closed")
 			break
 		}
 		if err != nil {
 			log.Printf("Read Failed: %+v\n", err)
 			break
 		}
+		
+		go func() {
+			go_err := lqr.SaveLogs(&msgSlice)
+			if go_err != nil {
+				log.Printf("DB Save Failed: %+v", go_err)
+			}
+		}()
+
 		for _, msg := range msgSlice {
-			iqr.InsertLog(msg)
 			fmt.Printf(msg.String() + "\n")
 		}
 	}

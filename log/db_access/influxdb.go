@@ -10,7 +10,6 @@ import (
 	"github.com/tori209/data-executor/log/format"
 	
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	// "github.com/influxdata/influxdb-client-go/v2/api/write"
 	apiHttp "github.com/influxdata/influxdb-client-go/v2/api/http"
 	"github.com/influxdata/influxdb-client-go/v2/api"
 )
@@ -53,6 +52,13 @@ func NewInfluxdbQueryRunner (opt InfluxdbOptions) (*InfluxdbQueryRunner) {
 	}()
 
 	return iqr
+}
+
+func (iqr * InfluxdbQueryRunner) SaveLogs(msgs *[]format.L4Message) error {
+	for _, msg := range *msgs {
+		iqr.InsertLog(msg)
+	}
+	return nil
 }
 
 func (iqr * InfluxdbQueryRunner) InsertLog(msg format.L4Message) {

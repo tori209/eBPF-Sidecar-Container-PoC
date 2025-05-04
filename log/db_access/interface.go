@@ -14,5 +14,5 @@ type TaskQueryRunner interface {
 }
 
 type LogQueryRunner interface {
-
+	SaveLogs(*[]format.L4Message)	error
 }
