@@ -48,9 +48,9 @@ spec:
         - name: collector-socket
           mountPath: /socket/collector.sock
         securityContext:
-          privileged: true
+          privileged: false
           capabilities:
-            add: ["NET_ADMIN", "SYS_ADMIN"]
+            add: ["NET_ADMIN", "BPF", "PERFMON"]
         env:
         - name: NODE_NAME
           valueFrom:

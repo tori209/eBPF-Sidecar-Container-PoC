@@ -6,6 +6,7 @@ import (
 	"time"
 	"strconv"
 	"context"
+	"math/rand"
 	
 	"github.com/google/uuid"
 	"github.com/tori209/data-executor/driver/manage"
@@ -69,7 +70,7 @@ func main() {
 			DestinationURL: "",
 			RangeBegin:	int64(0),
 			RangeEnd:	int64(1000),
-			RunAsEvil: false,
+			RunAsEvil: rand.Intn(2) == 0,
 		},
 		int64(100),
 	)
