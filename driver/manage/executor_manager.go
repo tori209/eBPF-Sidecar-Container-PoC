@@ -10,6 +10,7 @@ import (
 	"context"
 	"errors"
 	"container/list"
+	"math/rand"
 
 	"github.com/tori209/data-executor/log/db_access"
 	"github.com/tori209/data-executor/log/format"
@@ -247,6 +248,7 @@ func splitJobToTask (job *format.TaskRequestMessage, sliceSize int64) *list.List
 		if pivot + sliceSize <= task.RangeEnd {
 			task.RangeEnd = pivot + sliceSize
 		}
+		task.RunAsEvil =  rand.Intn(2) == 0
 		taskList.PushBack(&task)
 	}
 	return taskList
