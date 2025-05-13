@@ -51,6 +51,7 @@ spec:
           privileged: false
           capabilities:
             add: ["NET_ADMIN", "BPF", "PERFMON"]
+            drop: ["ALL"]
         env:
         - name: NODE_NAME
           valueFrom:
