@@ -1,9 +1,9 @@
 package dao
 
 import (
+	"github.com/google/uuid"
 	"github.com/tori209/data-executor/log/format"
 	"github.com/uptrace/bun"
-	"github.com/google/uuid"
 )
 
 type JobDao struct {
@@ -11,7 +11,7 @@ type JobDao struct {
 
 	JobID	uuid.UUID `bun:",pk,type:uuid"`
 	Source	format.DataSourceInfo `bun:"embed:src_"`
-	DestinationURL	string
+	Destination	format.DataSourceInfo `bun:"embed:dst_"`
 	RangeBegin		int64
 	RangeEnd		int64
 }

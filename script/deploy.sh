@@ -49,6 +49,7 @@ export POSTGRES_DB="tasklist"
 export COLLECTOR_INFLUXDB_ORG="data-executor"
 export COLLECTOR_INFLUXDB_BUCKET="collector"
 export INFLUXDB_URL="http://influxdb-influxdb2.influxdb.svc.cluster.local"
+export MAKE_ANOMALY="True"
 
 for secret_env in `cat ./script/endpoint.secret`; do
 	export $secret_env

@@ -11,7 +11,7 @@ func TaskRequestToJobDao(tr *format.TaskRequestMessage) (dao.JobDao) {
 	return dao.JobDao{
 		JobID: tr.JobID,
 		Source: tr.DataSource,
-		DestinationURL: tr.DestinationURL,
+		Destination: tr.Destination,
 		RangeBegin: tr.RangeBegin,
 		RangeEnd: tr.RangeEnd,
 	}
@@ -22,9 +22,10 @@ func TaskRequestToTaskDao(tr *format.TaskRequestMessage) (dao.TaskDao) {
 		JobID: tr.JobID,
 		TaskID: tr.TaskID,
 		Source: tr.DataSource,
-		DestinationURL: tr.DestinationURL,
+		Destination: tr.Destination,
 		RangeBegin: tr.RangeBegin,
 		RangeEnd: tr.RangeEnd,
+		RunAsEvil: tr.RunAsEvil,
 	}
 }
 

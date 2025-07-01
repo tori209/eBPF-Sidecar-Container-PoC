@@ -1,16 +1,16 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
-	"time"
 	"strconv"
-	"context"
-	
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/tori209/data-executor/driver/manage"
-	"github.com/tori209/data-executor/log/format"
 	"github.com/tori209/data-executor/log/db_access"
+	"github.com/tori209/data-executor/log/format"
 )
 
 func main() {
@@ -27,6 +27,18 @@ func main() {
 	if postgresDSN == "" {
 		log.Fatalf("POSTGRES_TASKDB_DSN not found in env.")
 	}
+	data_begin, data_begin_err := strconv.Atoi(os.Getenv("DATA_BEGIN"))
+	if data_begin_err != nil {
+		log.Fatalf("DATA_BEGIN not found in env.")
+	}
+	data_end, data_end_err := strconv.Atoi(os.Getenv("DATA_END"))
+	if data_end_err != nil {
+		log.Fatalf("DATA_END not found in env.")
+	}
+	anomalyActive, anomaly_err := strconv.ParseBool(os.Getenv("MAKE_ANOMALY"))
+	if anomaly_err != nil {
+		log.Fatalf("MAKE_ANOMALY not found in env. Make sure that is boolean")
+	}
 
 	// Create DB QueryRunner =========
 	pqr := db_access.NewPostgresQueryRunner(
@@ -39,7 +51,7 @@ func main() {
 		log.Fatalf("[Driver/main] DB Init Failed: %+v", err)
 	}
 	log.Printf("[Driver/main] PostgresSQL Connection Established.")
-	
+
 	// Create Manager ================
 	var em *manage.ExecutorManager
 	if manager, err := manage.NewExecutorManager(":8080", pqr); err != nil {
@@ -50,26 +62,28 @@ func main() {
 
 	// 요청 받는 것만 확인.
 	for {
-		cnt := em.CountOnlineExecutor() 
-		if cnt >= desiredExecutorNum {  break  }
+		cnt := em.CountOnlineExecutor()
+		if cnt >= desiredExecutorNum {
+			break
+		}
 		log.Printf("[Driver/main] Waiting executors being online... Current: %d", cnt)
 		time.Sleep(time.Second)
 	}
 	log.Printf("[Driver/main] Desired Number fulfilled.")
+	log.Printf("[Driver/main] Anomaly Mode: %t", anomalyActive)
 
 	em.ProcessJob(
 		format.TaskRequestMessage{
-			JobID: uuid.New(),
+			JobID:  uuid.New(),
 			TaskID: uuid.New(),
 			DataSource: format.DataSourceInfo{
-				Endpoint: "minio.minio-s.svc.cluster.local:80",
+				Endpoint:   "minio.minio-s.svc.cluster.local:80",
 				BucketName: "dummy-bucket",
 				ObjectName: "dummy_sensor_data.csv",
 			},
-			DestinationURL: "",
-			RangeBegin:	int64(0),
-			RangeEnd:	int64(1000),
-			RunAsEvil: false,
+			RangeBegin: int64(data_begin),
+			RangeEnd:   int64(data_end),
+			RunAsEvil:  anomalyActive,
 		},
 		int64(100),
 	)

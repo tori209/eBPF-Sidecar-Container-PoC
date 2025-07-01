@@ -1,20 +1,20 @@
 package manage
 
 import (
-	"os"
+	"container/list"
+	"context"
+	"encoding/gob"
+	"errors"
+	"log"
+	"math/rand"
 	"net"
 	"net/rpc"
-	"encoding/gob"
-	"log"
+	"os"
 	"sync"
-	"context"
-	"errors"
-	"container/list"
-	"math/rand"
 
+	"github.com/google/uuid"
 	"github.com/tori209/data-executor/log/db_access"
 	"github.com/tori209/data-executor/log/format"
-	"github.com/google/uuid"
 )
 
 //====================================================================
@@ -238,7 +238,7 @@ func (em *ExecutorManager) start() {
 	}()
 }
 
-func splitJobToTask (job *format.TaskRequestMessage, sliceSize int64) *list.List {
+func splitJobToTask (job *format.TaskRequestMessage, sliceSize int64, anomalyTest bool) *list.List {
 	// Job을 Range 단위로 쪼개어 Task로 분할
 	taskList := list.New()
 	for pivot := job.RangeBegin; pivot < job.RangeEnd; pivot = pivot + sliceSize {
@@ -248,7 +248,22 @@ func splitJobToTask (job *format.TaskRequestMessage, sliceSize int64) *list.List
 		if pivot + sliceSize <= task.RangeEnd {
 			task.RangeEnd = pivot + sliceSize
 		}
-		task.RunAsEvil =  rand.Intn(2) == 0
+
+		
+		if !anomalyTest { // Random Test
+			task.RunAsEvil = false
+			if rand.Intn(2) == 0 {
+				task.Destination.Endpoint = os.Getenv("NORMAL_MINIO_ENDPOINT")
+				task.Destination.BucketName = os.Getenv("NORMAL_MINIO_BUCKET")
+			} else {
+				task.Destination.Endpoint = os.Getenv("MALICIOUS_MINIO_ENDPOINT")
+				task.Destination.BucketName = os.Getenv("MALICIOUS_MINIO_BUCKET")
+			}
+	  } else {  // Anomaly Test
+			task.Destination.Endpoint = os.Getenv("NORMAL_MINIO_ENDPOINT")
+			task.Destination.BucketName = os.Getenv("NORMAL_MINIO_BUCKET")
+			task.RunAsEvil = rand.Intn(100) < 5
+		}
 		taskList.PushBack(&task)
 	}
 	return taskList
@@ -264,7 +279,7 @@ func (em *ExecutorManager) ProcessJob(request format.TaskRequestMessage, sliceSi
 	}
 
 	// Task Split & Save To DB ==========================================
-	taskList := splitJobToTask(&request, sliceSize)
+	taskList := splitJobToTask(&request, sliceSize, request.RunAsEvil)
 	if err := em.db.SaveJob(&request); err != nil {
 		log.Fatalf("[ExecutorManager] Failed to send job data: %+v", err)
 	}

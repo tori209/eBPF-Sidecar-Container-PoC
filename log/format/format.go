@@ -1,9 +1,10 @@
 package format
 
 import (
-	"fmt"
 	"encoding/binary"
+	"fmt"
 	"net"
+
 	"github.com/google/uuid"
 )
 
@@ -56,13 +57,13 @@ type DataSourceInfo struct {
 
 // GOB를 통해 간단한 Manager->Executor 통신 구현을 위한 메세지 포맷
 type TaskRequestMessage struct {
-	JobID			uuid.UUID
-	TaskID			uuid.UUID
+	JobID					uuid.UUID
+	TaskID				uuid.UUID
 	DataSource		DataSourceInfo
-	DestinationURL	string
+	Destination		DataSourceInfo
 	RangeBegin		int64			
-	RangeEnd		int64
-	RunAsEvil		bool		// 실행 스크립트를 실제로 전송하기엔... Dummy 악성행위 생성용
+	RangeEnd			int64
+	RunAsEvil			bool
 }
 
 type TaskResponseMessage struct {

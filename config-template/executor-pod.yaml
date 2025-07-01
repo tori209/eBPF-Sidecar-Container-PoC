@@ -37,6 +37,11 @@ spec:
         envFrom:
         - configMapRef:
             name: executor-env
+        env:
+        - name: KUBE_POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
       - name: watcher
         image: tori209/ebpf-sidecar-poc:${TAG_NAME}
         imagePullPolicy: "Always"
