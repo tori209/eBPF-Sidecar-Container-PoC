@@ -1,0 +1,27 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "bb56e81d-a5e5-443e-8b0e-b12475f129e4.16619d2f-4a9f-4b16-84dd-c320c666e646.tar.gz",
+      "size": 89255093,
+      "last_modified": "2025-07-02T04:16:02+00:00",
+      "etag": "9beec05508cd6d98773b4ef407e7ffce-6",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "bb56e81d-a5e5-443e-8b0e-b12475f129e4.7eb6d660-d972-48d1-ae1b-210ad2b084d6.tar.gz",
+      "size": 89255099,
+      "last_modified": "2025-07-02T04:16:02+00:00",
+      "etag": "300731d1ae206d4519e52026ffbc8879-6",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "bb56e81d-a5e5-443e-8b0e-b12475f129e4.e6e76c39-ccf6-40ff-8722-fe17c080b9b7.tar.gz",
+      "size": 89255094,
+      "last_modified": "2025-07-02T04:16:02+00:00",
+      "etag": "2a5bb9a95e48a171ef6229a8a5bd1d18-6",
+      "content_type": "application/gzip"
+    }
+  ]
+}

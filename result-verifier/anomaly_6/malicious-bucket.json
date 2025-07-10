@@ -1,0 +1,55 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.22e18c57-3641-490c-a9d1-35e10fae81b7.10.2.2.175.9600_to_9700.gzip",
+      "size": 12008021,
+      "last_modified": "2025-07-03T15:13:04+00:00",
+      "etag": "70c404db8cf978dbb51544b3cd6dcebd",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.2c26c64d-4b4f-4bb7-8f8b-34fe02a42fbe.10.2.0.81.1900_to_2000.gzip",
+      "size": 12008027,
+      "last_modified": "2025-07-03T15:12:07+00:00",
+      "etag": "025ae28a3147fed56650e66cf14e7324",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.71237f85-89cc-4333-9e96-a522a89e3c1e.10.2.1.160.5100_to_5200.gzip",
+      "size": 12008017,
+      "last_modified": "2025-07-03T15:12:37+00:00",
+      "etag": "6d9135970d52a3b85b0164ea080a6fd0",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.88612672-0abe-44e1-b55c-0ed88b851c33.10.2.2.182.7000_to_7100.gzip",
+      "size": 12008017,
+      "last_modified": "2025-07-03T15:12:47+00:00",
+      "etag": "5a9a0e623aebddfa9b4abc6a18a23131",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.9a8f8fa7-b58b-4471-ba1f-edbb6bb5357e.10.2.2.175.4900_to_5000.gzip",
+      "size": 12008020,
+      "last_modified": "2025-07-03T15:12:28+00:00",
+      "etag": "5332187d2b97f3bde4faccdcff7d47a8",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.b689287b-8634-4514-b889-a5616e22b108.10.2.2.189.9300_to_9400.gzip",
+      "size": 12008019,
+      "last_modified": "2025-07-03T15:13:03+00:00",
+      "etag": "be5ff4a8783814b9ef94046aedc85f48",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "5350d047-b182-4d66-9cd4-c19a38eb54ea.cc6f4840-c5e1-4e9b-a601-ef671a6ee1ba.10.2.0.207.1800_to_1900.gzip",
+      "size": 12008021,
+      "last_modified": "2025-07-03T15:12:07+00:00",
+      "etag": "8a52ee70e9d76fa0b114d974cb434c3d",
+      "content_type": "application/gzip"
+    }
+  ]
+}

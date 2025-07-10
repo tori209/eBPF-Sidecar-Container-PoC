@@ -1,0 +1,55 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.289e4f23-b13e-4fea-87cc-fb7b62bb64f8.tar.gz",
+      "size": 328650037,
+      "last_modified": "2025-07-02T05:33:09+00:00",
+      "etag": "1eb8ebe66c0c2a78489b710b9bc68d5c-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.807e1d0d-a7e4-458d-a337-ece9974c1fa1.tar.gz",
+      "size": 328650264,
+      "last_modified": "2025-07-02T05:33:24+00:00",
+      "etag": "88ea25653d6fc586d9f21a6c479b0b2c-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.a602b0a1-8965-4212-a9cc-b397feedbdeb.tar.gz",
+      "size": 328650246,
+      "last_modified": "2025-07-02T05:34:07+00:00",
+      "etag": "a54cb13cde9d1222657dd557633f7215-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.b11c128a-eb79-44da-b642-9114b254d27e.tar.gz",
+      "size": 328650253,
+      "last_modified": "2025-07-02T05:33:09+00:00",
+      "etag": "4200452d0e5d5fc13cbd07e305cf24a1-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.b63ec0e9-ec4b-4035-9d4d-89356471a7f1.tar.gz",
+      "size": 328650244,
+      "last_modified": "2025-07-02T05:33:25+00:00",
+      "etag": "62f3100f8157f0a14fba5774eddc5046-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.baea2087-2b86-4e20-97c8-d4716c911f9f.tar.gz",
+      "size": 328650199,
+      "last_modified": "2025-07-02T05:33:24+00:00",
+      "etag": "a8743fcdbaa84287f66a838f05811a21-20",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "45cb809f-03cd-4ffa-a7ac-67efc42e2ed3.c72678c4-21f4-4ae5-802b-8866e2ffcbe6.tar.gz",
+      "size": 328650235,
+      "last_modified": "2025-07-02T05:34:07+00:00",
+      "etag": "6f79bb224fee17019fd3c55b392ac321-20",
+      "content_type": "application/gzip"
+    }
+  ]
+}

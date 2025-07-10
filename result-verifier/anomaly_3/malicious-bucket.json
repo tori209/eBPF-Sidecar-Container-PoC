@@ -1,0 +1,48 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.20859662-9324-4bcf-b7e3-d7b7a4eebd8f.10.2.1.149.1400_to_1500.gzip",
+      "size": 12008004,
+      "last_modified": "2025-07-03T14:53:53+00:00",
+      "etag": "42816bd134bf8aad6eb25dd0740e8957",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.3c280e48-f488-4ea6-853f-2536863b3166.10.2.1.164.9100_to_9200.gzip",
+      "size": 12008016,
+      "last_modified": "2025-07-03T14:54:51+00:00",
+      "etag": "b8aea1ee940bd1974c5ec43231deacdb",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.43160129-51ae-48de-a245-8a9447742a59.10.2.0.184.9000_to_9100.gzip",
+      "size": 12008017,
+      "last_modified": "2025-07-03T14:54:50+00:00",
+      "etag": "67a4fbca4e5854c67cd59244cf69aefe",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.596ad2d6-6d4f-41b3-a3c3-ae74d1b8832a.10.2.0.44.6200_to_6300.gzip",
+      "size": 12008009,
+      "last_modified": "2025-07-03T14:54:32+00:00",
+      "etag": "643af489faaca76a257abb51ca81081c",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.615b780a-5f70-4c1d-aadd-b8b1754c17c4.10.2.0.220.8900_to_9000.gzip",
+      "size": 12008017,
+      "last_modified": "2025-07-03T14:54:50+00:00",
+      "etag": "478c04b94e39c0612ec8151acff19758",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "c89a7bb5-f3b5-4a1a-85d9-5fa1c65bb00e.a239f552-01d0-470d-b620-d035c7829a86.10.2.1.58.6900_to_7000.gzip",
+      "size": 12008016,
+      "last_modified": "2025-07-03T14:54:35+00:00",
+      "etag": "69625c308d932e0f79fd0dd2d2d55d8a",
+      "content_type": "application/gzip"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+INSERT INTO "jobs" ("job_id", "src_endpoint", "src_bucket_name", "src_object_name", "dst_endpoint", "dst_bucket_name", "dst_object_name", "range_begin", "range_end") VALUES ('70915586-6f3d-47ee-b20c-882dba117ce0', 'minio.minio-s.svc.cluster.local:80', 'dummy-bucket', 'dummy_sensor_data.csv', '', '', '', 0, 10000);

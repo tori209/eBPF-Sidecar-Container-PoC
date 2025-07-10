@@ -1,0 +1,370 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.00b54978-e253-4d22-aa93-679843d045da.10.2.2.101.2600_to_2700.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "8076b63722a8bfcf0a770ad793bfb649",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.06534bd8-b67f-4e37-babe-182041822039.10.2.1.76.9800_to_9900.gzip",
+      "size": 101,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "82758a14885821659ec347ffe8508b98",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.1052b701-6613-4b09-9846-250edd6e8ea7.10.2.0.120.9100_to_9200.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "e958f05f0232bb487adc24f219bf6e8d",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.113dd0fa-b10b-4a8e-8121-a162df9bfba1.10.2.2.85.2700_to_2800.gzip",
+      "size": 103,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "86527b4215d91428b880a8def734edfd",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.1dbfe967-b62f-45db-80a0-1db5e3d3f3a0.10.2.0.120.1700_to_1800.gzip",
+      "size": 104,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "24f22d033b535d68939ee031be1094f1",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.1ef6cd95-6756-4688-a6df-06ccda719989.10.2.2.148.1800_to_1900.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "1c7e97e3726c772fd5f8044768fd8e34",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.220ee5f7-3867-4eb3-acf7-7e01b9ec4a85.10.2.0.107.6800_to_6900.gzip",
+      "size": 94,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "4ff056b387b77f5ded0e7001e6e2bee2",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.228445ee-375f-4c25-8b57-bebf6a5684b9.10.2.1.51.2100_to_2200.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "7807e62d301557570473a5647ff3efbf",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.286f5656-1e29-4617-b345-1149184a02a4.10.2.0.8.6700_to_6800.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "8d402fd9526c324165e8c2223000f547",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.41b99965-2dac-4698-a150-08149dad788c.10.2.1.41.4700_to_4800.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "2038cf1cda24946676a8f8e808e6b389",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.44aceb9e-e90b-4a6b-b630-17bac159e518.10.2.2.73.2500_to_2600.gzip",
+      "size": 108,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "cc53c49c2402a95ba41b8e9c76676fe8",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.4da246da-9996-4d02-82bb-6c2219f4816c.10.2.2.101.5000_to_5100.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "9fa6c7455d84605ba32a04db07650a58",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.4f3b56c7-923a-44c1-bf9e-95ed3f8486bb.10.2.1.17.3300_to_3400.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "726f29276f6a5081be1d6b208b9b8dc9",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.5131a017-3fc0-4794-83e5-b82d136a6da1.10.2.1.104.4600_to_4700.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "11fdd8c2a297887a68c77171faae0582",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.5a87e0be-19e5-4d86-b21c-f7854bb1bdda.10.2.2.73.5100_to_5200.gzip",
+      "size": 103,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "39bb8e69c2b09ec65af86cabb3e85d79",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.5aec7687-1161-4a8c-a5b6-d2eb1b8c2406.10.2.1.104.9400_to_9500.gzip",
+      "size": 104,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "d1b74bb8491d3f9fc680b33b6b2f7136",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.61318436-0950-48be-9a51-adce9b86f1ec.10.2.1.51.7100_to_7200.gzip",
+      "size": 102,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "e126d17d382b600fa4b9dd17dafc6c19",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.6619a7e9-fbe0-435b-b85a-34cca158478f.10.2.1.76.4800_to_4900.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "689769cac13a6b89ba412cd3622846ef",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.6a05da4d-5ee3-4a3f-8968-974bf7eb37bd.10.2.1.17.600_to_700.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "fc2861ce580e664599350b9101e98f5b",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.7141e925-e656-48e6-8be0-6ff842035970.10.2.1.26.5600_to_5700.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "d6811e0355d08ac5facb1c4e57ae95d0",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.736c4ff9-938f-4008-8844-6cd30c69cf1c.10.2.2.73.7700_to_7800.gzip",
+      "size": 98,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "bd312c6c54cfb5a137f35871586eb4fb",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.74fe6364-9e04-4e5d-8110-7d244487535c.10.2.1.84.6400_to_6500.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "cb166813c8ae951512c72a4ffc8a238d",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.753d0eca-ebb6-4871-b546-2bae8df57487.10.2.0.72.4100_to_4200.gzip",
+      "size": 101,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "65dad4d65b1e7ca14ee19a80f822c818",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.780fbadf-daa4-4e05-94ea-f35954937712.10.2.0.172.8500_to_8600.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "4fe5e868d5a9cbfcbf8ff381e4ebf174",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.7fc746d1-a364-4f1e-a3f0-b38ca674e3a4.10.2.2.148.3400_to_3500.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "b7a30b4d85f9e9bfb9ff332c38a9b2d8",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.80498837-36c1-4043-b6a3-729c9cf128a7.10.2.1.26.800_to_900.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "8e5f74690e48e92fee3904af9bc22b59",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.841238b8-1291-4b7d-9422-ce1ca681b2ea.10.2.2.212.5500_to_5600.gzip",
+      "size": 106,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "7bd658cde8db488792c7b27eca2370c1",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.8875b42e-cd30-4e26-b0f0-96f57c7cb9e2.10.2.2.85.5200_to_5300.gzip",
+      "size": 102,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "3fa2d47243c396815cfeaf5ff92d531f",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.8b832bc6-85b4-49f2-be5c-9585e4cd4377.10.2.2.85.7600_to_7700.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "1b5b105dd472c3cd56b517881a315822",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.8c71d638-2133-4237-a4e9-5284802c83cf.10.2.1.76.7200_to_7300.gzip",
+      "size": 104,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "bdbcf1469afd443b15296da5ca6845b6",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.8fc717c6-eb1e-439c-b6b4-f0cd1a104569.10.2.1.85.6600_to_6700.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "c02b529c7fe176c2ce20daae56d7201e",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.9158d363-56f7-431e-9512-c8573e7cd2c7.10.2.0.111.8000_to_8100.gzip",
+      "size": 101,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "995a5efe31e39ede154963b944a9b7fb",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.97dc55fc-76f2-438d-a9aa-21315e3c3a14.10.2.0.111.5400_to_5500.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "e17a2ebe048356f4e845b9194a02e47d",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.9c7481de-38ec-42e8-8c91-08075ae37fc6.10.2.0.72.6200_to_6300.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "57d0a50ad34d12220280e324f65896b9",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.a7e55d88-5683-427e-a2c8-82ad56aa39c7.10.2.2.101.200_to_300.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "e3f2f7707ad22d1684104006fda5db40",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.a859c6c9-b477-47b3-b95d-043cc4e7fb80.10.2.2.6.0_to_100.gzip",
+      "size": 116,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "e4d4425f8e4c3503d8bb15a4ada835b0",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.ab805b91-4df3-41c1-a1d2-0a7fe5c70fa1.10.2.1.26.8700_to_8800.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "fd3e52130f17ec8dd8dfb146cdc309fe",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.abfe8892-ac28-49de-a135-a0c563bee5cb.10.2.2.222.3200_to_3300.gzip",
+      "size": 100,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "00f5b8ae636124ef639c660baf608582",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.ad9c5933-2734-49ef-a7ff-2e8f6a430c54.10.2.1.84.9000_to_9100.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "945267069392551b41606108a29abdde",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.aff7a85a-2df2-4310-8c4c-6230fca61ee8.10.2.1.84.1400_to_1500.gzip",
+      "size": 104,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "c196b8395867114409a0fa870bdc6cad",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.b61ea378-5ca5-463e-ba4f-5b70cf8a2e19.10.2.0.8.1200_to_1300.gzip",
+      "size": 103,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "d1928bd5167674eacfe0d99e2f1a22d2",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.bb853193-d55f-477d-abe6-3970c5ff22bf.10.2.1.26.3000_to_3100.gzip",
+      "size": 98,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "79d2ed7f9643d2fc801b1c582fc4101e",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.c6aa5e63-2370-434c-94e0-caa36ffb7e0c.10.2.2.148.8300_to_8400.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "50c590366023a612b8a9380249a41bf3",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.cb8d051d-552b-4f69-b282-efe0e338862f.10.2.0.8.8800_to_8900.gzip",
+      "size": 101,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "c7220b6bf68e87c2223abe35d6974da3",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.cca01f1b-60a4-41a5-9d08-585028bf72be.10.2.2.222.2400_to_2500.gzip",
+      "size": 104,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "4eb0aa998e7b683fd5e3219fe6679f4a",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.d6ab91da-f0b7-4436-be48-dc735dca29c9.10.2.0.208.100_to_200.gzip",
+      "size": 99,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "92efb6b34164ff0c9c2bc5367b11dcae",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.de00a844-04d1-4d5e-b9f0-d45595da0558.10.2.1.51.4300_to_4400.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "9da4812be71a83c59fdd6fc5c83758cf",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.de5b78d3-3997-4512-93f9-bd782d69c7ea.10.2.2.216.400_to_500.gzip",
+      "size": 102,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "82f9c26f7fc97f0f49dfd12c73960a34",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.e046d92b-09d2-416f-84e9-5c50da077cc8.10.2.0.107.2300_to_2400.gzip",
+      "size": 103,
+      "last_modified": "2025-07-02T07:14:41+00:00",
+      "etag": "7e3a1105cd1b828a713fe8a65ec87cf4",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.e1976d45-6e6c-4a36-943b-a4c328e7e803.10.2.1.17.6100_to_6200.gzip",
+      "size": 102,
+      "last_modified": "2025-07-02T07:14:43+00:00",
+      "etag": "1157aeb5df07bbf3b3f8e6f1a22fe515",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.f7bfa894-dc85-4d55-9d94-9d01420bae05.10.2.2.212.3100_to_3200.gzip",
+      "size": 102,
+      "last_modified": "2025-07-02T07:14:42+00:00",
+      "etag": "3e44d77bd675ae01b0dfd08f715ba905",
+      "content_type": "application/gzip"
+    },
+    {
+      "object_name": "fb6c04c3-8048-44b4-9d66-b48fa1252369.f97f55a3-92de-4850-bdc6-72caccfc1dbc.10.2.2.6.8200_to_8300.gzip",
+      "size": 105,
+      "last_modified": "2025-07-02T07:14:44+00:00",
+      "etag": "e55735224b081b9e6958539e3f087165",
+      "content_type": "application/gzip"
+    }
+  ]
+}

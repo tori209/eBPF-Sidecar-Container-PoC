@@ -1,0 +1,13 @@
+{
+  "endpoint": "ec2-15-164-214-122.ap-northeast-2.compute.amazonaws.com:9000",
+  "bucket": "malicious-bucket",
+  "metadata": [
+    {
+      "object_name": "ba4027dd-b773-4114-8763-3119da52d69f.45f69164-928f-4ed1-b7d2-81461f05b472.10.2.2.153.7500_to_7600.gzip",
+      "size": 12008014,
+      "last_modified": "2025-07-03T15:07:22+00:00",
+      "etag": "c5d9c4459e8f54e43b4e25c58c06fbcc",
+      "content_type": "application/gzip"
+    }
+  ]
+}
